@@ -17,22 +17,22 @@
  [
   "B view 'system' renders (non-blank)",
   true,
-  "variance 361.5"
+  "variance 360.7"
  ],
  [
   "B view 'earthmoon' renders (non-blank)",
   true,
-  "variance 249.2"
+  "variance 244.2"
  ],
  [
   "B view 'planet' renders (non-blank)",
   true,
-  "variance 661.1"
+  "variance 384.8"
  ],
  [
   "B view 'sky' renders (non-blank)",
   true,
-  "variance 3193.4"
+  "variance 1896.1"
  ],
  [
   "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
@@ -42,12 +42,12 @@
  [
   "C weather card for Tokyo",
   true,
-  "22\u00b0C \u2600\ufe0f Clear sky Feels like 27 \u00b0C Humidity 95 % Wind 3 km/h SW \u00b7 gust 9 Pressure 1010 hPa"
+  "21\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 22 \u00b0C Humidity 64 % Wind 5 km/h NNW \u00b7 gust 12 Pressure 101"
  ],
  [
   "C sky view for Tokyo computed",
   true,
-  "{\"sun\":-47.6494022190964,\"L\":0}"
+  "{\"sun\":-41.03282947092856,\"L\":0}"
  ],
  [
   "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
@@ -57,12 +57,12 @@
  [
   "C weather card for Sydney",
   true,
-  "20\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 18 \u00b0C Humidity 49 % Wind 11 km/h N \u00b7 gust 22 Pressure 1022"
+  "18\u00b0C \u2600\ufe0f Clear sky Feels like 16 \u00b0C Humidity 54 % Wind 8 km/h N \u00b7 gust 21 Pressure 1021 hPa"
  ],
  [
   "C sky view for Sydney computed",
   true,
-  "{\"sun\":-49.02361434222058,\"L\":0}"
+  "{\"sun\":-28.87222836686145,\"L\":0}"
  ],
  [
   "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
@@ -72,12 +72,12 @@
  [
   "C weather card for Madrid",
   true,
-  "26\u00b0C \u2601\ufe0f Overcast Feels like 26 \u00b0C Humidity 38 % Wind 6 km/h ENE \u00b7 gust 23 Pressure 1020 hP"
+  "26\u00b0C \u26c5 Partly cloudy Feels like 26 \u00b0C Humidity 36 % Wind 1 km/h E \u00b7 gust 7 Pressure 1019 h"
  ],
  [
   "C sky view for Madrid computed",
   true,
-  "{\"sun\":45.73441672018364,\"L\":1}"
+  "{\"sun\":8.44349391989796,\"L\":1}"
  ],
  [
   "D ISO typing '1969-07-20 20:17:00' (UTC)",
@@ -205,6 +205,26 @@
   "0.362 deg"
  ],
  [
+  "G1 galaxy view renders; Sun at ~8.18 kpc",
+  true,
+  "R=8.18 kpc, 246 km/s"
+ ],
+ [
+  "G2 galaxy info panel text",
+  true,
+  "26,680 light-years (8.18 kpc) from the Galactic Centre \u00b7 moving 246 km/s \u00b7 radia"
+ ],
+ [
+  "G3 time slider moves the Sun along its orbit (66 Myr ago)",
+  true,
+  "The Sun 66 million years ago"
+ ],
+ [
+  "G4 helix-through-space mode",
+  true,
+  ""
+ ],
+ [
   "J share link encodes loc, t, view",
   true,
   "#loc=40.7128,-74.0060,10&name=New+York,+NY,+USA&tz=America/New_York&t=2024-04-08T18:42:37Z&view=sky&scale=1&az=222.4&alt=49.5&fov="
@@ -222,12 +242,12 @@
  [
   "L past date uses archive data, labelled 'Historical (ERA5 reanalysis)'",
   true,
-  "18\u00b0C \u2601\ufe0f Overcast Feels like 16 \u00b0C Humidity 33 % Wind 6 km/h SW \u00b7 gust 18 Pressure 1020 hPa Precipita"
+  "26\u00b0C \u2601\ufe0f Overcast Feels like 28 \u00b0C Humidity 57 % Wind 17 km/h S \u00b7 gust 34 Pressure 1012 hPa Precipita"
  ],
  [
   "L +1 year: 'No forecast available' + labelled climatology",
   true,
-  "No forecast available this far ahead. 20\u00b0C typical Mean cloud cover 31 % Chance of rain 0 % Typical wind 10 km/h Climato"
+  "No forecast available this far ahead. 19\u00b0C typical Mean cloud cover 26 % Chance of rain 0 % Typical wind 8 km/h Climatol"
  ],
  [
   "L before 1940: 'No weather data'",
@@ -272,17 +292,17 @@
  [
   "O cinematic tour runs (letterbox + caption)",
   true,
-  "Inner planets, exactly where they are"
+  "Earth \u2014 tilted, turning, and lit by the Sun"
  ],
  [
   "P FPS, solar-system view (Intel HD 4600, 1440x900)",
   true,
-  "46 fps @ dpr 0.78, 1 draw calls, 2 tris"
+  "56 fps @ dpr 0.70, 77 draw calls, 124486 tris"
  ],
  [
   "P FPS, Earth close-up",
   true,
-  "38 fps @ dpr 0.78"
+  "46 fps @ dpr 0.70"
  ],
  [
   "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
@@ -332,6 +352,6 @@
  [
   "T final file size <= 16 MB",
   true,
-  "2.08 MB"
+  "2.12 MB"
  ]
 ]

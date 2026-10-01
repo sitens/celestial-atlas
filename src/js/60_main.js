@@ -43,7 +43,7 @@ const ptrs = new Map(); let dragInfo = null, pinch0 = null;
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   dragInfo = { x: e.clientX, y: e.clientY, moved: 0, pan: e.shiftKey || e.button === 2 || e.button === 1 };
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: CAM.dist, fov: SKY.fov }; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: S.view === 'galaxy' ? GV.dist : CAM.dist, fov: SKY.fov }; }
   tourCancel(); CAM.tween = null; CAM.blend = 1;
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -53,10 +53,12 @@ canvas.addEventListener('pointermove', e => {
   const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
   if (ptrs.size === 2 && pinch0) {
     const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), r = pinch0.d / Math.max(1, d);
-    if (S.view === 'sky') SKY.fov = clamp(pinch0.fov * r, 2, 110); else CAM.dist = pinch0.dist * r; return;
+    if (S.view === 'sky') SKY.fov = clamp(pinch0.fov * r, 2, 110); else if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(pinch0.dist * r, 0.0004, 900); } else CAM.dist = pinch0.dist * r; return;
   }
   dragInfo.moved += Math.abs(dx) + Math.abs(dy);
-  if (S.view === 'sky') {
+  if (S.view === 'galaxy') {
+    GV.tween = null; GV.yaw -= dx * 0.0052; GV.pitch = clamp(GV.pitch + dy * 0.0052, -1.52, 1.52);
+  } else if (S.view === 'sky') {
     const dpp = SKY.fov / renderer.domElement.clientHeight;
     SKY.az = (SKY.az - dx * dpp + 360) % 360; SKY.alt = clamp(SKY.alt + dy * dpp, -89, 89);
   } else if (dragInfo.pan || e.shiftKey) {
@@ -66,15 +68,15 @@ canvas.addEventListener('pointermove', e => {
 });
 canvas.addEventListener('pointerup', e => {
   ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = null;
-  if (dragInfo && dragInfo.moved < 5 && S.view !== 'sky') { const id = pickBody(e.clientX, e.clientY); if (id) selectBody(id); }
+  if (dragInfo && dragInfo.moved < 5 && S.view !== 'sky' && S.view !== 'galaxy') { const id = pickBody(e.clientX, e.clientY); if (id) selectBody(id); }
   if (ptrs.size === 0) dragInfo = null;
 });
 canvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch0 = null; });
-canvas.addEventListener('dblclick', e => { if (S.view === 'sky') return; const id = pickBody(e.clientX, e.clientY); if (id) { selectBody(id); focusBody(id); } });
+canvas.addEventListener('dblclick', e => { if (S.view === 'sky' || S.view === 'galaxy') return; const id = pickBody(e.clientX, e.clientY); if (id) { selectBody(id); focusBody(id); } });
 canvas.addEventListener('wheel', e => {
   e.preventDefault(); tourCancel();
   const k = Math.exp(clamp(e.deltaY, -300, 300) * 0.0011);
-  if (S.view === 'sky') SKY.fov = clamp(SKY.fov * k, 2, 110); else { CAM.tween = null; CAM.blend = 1; CAM.dist = clamp(CAM.dist * k, camLimits().min, camLimits().max); }
+  if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(GV.dist * k, 0.0004, 900); } else if (S.view === 'sky') SKY.fov = clamp(SKY.fov * k, 2, 110); else { CAM.tween = null; CAM.blend = 1; CAM.dist = clamp(CAM.dist * k, camLimits().min, camLimits().max); }
   syncFov();
 }, { passive: false });
 function pickBody(cx, cy) {
@@ -88,7 +90,7 @@ function pickBody(cx, cy) {
 }
 const tip = document.createElement('div'); tip.id = 'tip'; tip.style.cssText = 'position:fixed;z-index:25;pointer-events:none;background:#0b1020e0;border:1px solid #fff2;border-radius:8px;padding:5px 9px;font-size:11.5px;display:none;white-space:nowrap'; document.body.appendChild(tip);
 function hoverMove(e) {
-  if (S.view === 'sky' || !ST) { tip.style.display = 'none'; return; }
+  if (S.view === 'sky' || S.view === 'galaxy' || !ST) { tip.style.display = 'none'; return; }
   const id = pickBody(e.clientX, e.clientY);
   if (!id) { tip.style.display = 'none'; canvas.style.cursor = 'grab'; return; }
   canvas.style.cursor = 'pointer';
@@ -115,8 +117,8 @@ function focusBody(id, opts = {}) {
   if (S.view === 'sky') setView('planet', { noFly: true });
   else { S.view = 'planet'; markView(); }
 }
-function markView() { document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view)); updateSkyUI(); }
-function updateSkyUI() { const sky = S.view === 'sky'; $('skyBar').style.display = sky ? 'flex' : 'none'; $('skyInfo').style.display = sky ? 'block' : 'none'; }
+function markView() { document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view)); document.body.classList.toggle('galaxy', S.view === 'galaxy'); updateSkyUI(); }
+function updateSkyUI() { const gal = S.view === 'galaxy'; $('galBar').style.display = gal ? 'flex' : 'none'; $('galInfo').style.display = gal ? 'block' : 'none'; const sky = S.view === 'sky'; $('skyBar').style.display = sky ? 'flex' : 'none'; $('skyInfo').style.display = sky ? 'block' : 'none'; }
 function setScale(tr, keepCam) {
   if (S.trueScale === tr) return;
   const r0 = rVis(CAM.focus); S.trueScale = tr; const r1 = rVis(CAM.focus);
@@ -126,6 +128,7 @@ function setScale(tr, keepCam) {
 }
 function setView(v, opts = {}) {
   tourCancel();
+  if (v === 'galaxy') { enterGalaxy({ intro: !opts.noIntro }); return; }
   if (v === 'sky') { S.view = 'sky'; markView(); if (!SKY.aimed || opts.reaim) { SKY.aimed = true; SKY.needAim = true; } return; }
   const prev = S.view; S.view = v; markView();
   if (opts.noFly) return;
@@ -201,9 +204,11 @@ async function runTour() {
     () => { setScale(false); cap('Jupiter and its Galilean moons'); flyTo({ focus: 'Jupiter', dist: rVis('Jupiter') * 12, pitch: 0.22, yaw: 0.6, dur: 3800 }); return 6400; },
     () => { cap('Saturn — rings tilted toward the Sun'); flyTo({ focus: 'Saturn', dist: rVis('Saturn') * 11, pitch: 0.3, yaw: 0.9, dur: 3600 }); return 6000; },
     () => { cap('Back to the big picture'); flyTo({ focus: 'Sun', dist: 175, pitch: 0.5, yaw: 0.55, dur: 3600 }); return 5000; },
+    () => { cap('Zooming out to the Milky Way — the Sun circles the Galactic Centre every ~223 million years'); enterGalaxy({ dur: 7000 }); GV.gt = 0; GV.playing = false; return 8500; },
+    () => { cap('…bobbing through the disc every ~70 Myr, a helix through space'); GV.drift = true; syncGalUI(); galFly({ yaw: helixYaw(), pitch: 0.4, dist: 150, tx: 0, ty: 0, tz: 0, dur: 5000 }); GV.speed = 60; GV.playing = true; return 9000; },
   ];
   for (const st of steps) { if (tok !== tourToken) return; const wait = st(); await sleep(wait, tok); }
-  if (tok === tourToken) { tourCancel(); S.view = 'system'; markView(); }
+  if (tok === tourToken) { GV.playing = false; GV.drift = false; GV.gt = 0; syncGalUI(); tourCancel(); S.view = 'system'; markView(); }
 }
 
 // ---------- location ----------
@@ -217,7 +222,7 @@ function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.st
 let lastFrame = performance.now(), fpsAcc = 0, fpsN = 0, FPS = 0;
 function resize() {
   const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false);
-  camera.aspect = w / h; camera.updateProjectionMatrix(); skyCam.aspect = w / h; skyCam.updateProjectionMatrix();
+  camera.aspect = w / h; camera.updateProjectionMatrix(); skyCam.aspect = w / h; skyCam.updateProjectionMatrix(); galCam.aspect = w / h; galCam.updateProjectionMatrix();
   postResize();
 }
 addEventListener('resize', resize);
@@ -239,10 +244,15 @@ function frame(now) {
   ST = computeState(S.t);
   if (applyStarEpoch(S.t)) SKY.lblKey = null;
   const p1 = performance.now();
-  if (S.view === 'sky') {
+  if (S.view === 'galaxy') {
+    updateGalaxy(dt, now); renderScene(galScene, galCam);
+    if (lastViewKind !== 'gal') { lastViewKind = 'gal'; for (const id in OB) OB[id].label.style.display = 'none'; for (const k of ['N', 'E', 'S', 'W']) markerLabels[k].style.display = 'none'; for (const k in SKY.labels) { SKY.labels[k].style.display = 'none'; SKY.labels[k]._on = false; } }
+  } else if (S.view === 'sky') {
+    if (lastViewKind === 'gal') hideGalLabels();
     const s0 = performance.now(); updateSky(ST); acc(PROF.parts = PROF.parts || {}, 'sky', performance.now() - s0); if (SKY.needAim) { SKY.needAim = false; autoAim(); updateSky(ST); } renderScene(skyScene, skyCam);
     if (lastViewKind !== 'sky') { lastViewKind = 'sky'; for (const id in OB) OB[id].label.style.display = 'none'; for (const k of ['N', 'E', 'S', 'W']) markerLabels[k].style.display = 'none'; }
   } else {
+    if (lastViewKind === 'gal') hideGalLabels();
     if (lastViewKind !== 'sys') { lastViewKind = 'sys'; for (const k in SKY.labels) { SKY.labels[k].style.display = 'none'; SKY.labels[k]._on = false; } }
     const origin = stepCamera(now);
     updateScene(ST, origin); updateLabels(); renderScene(scene, camera);

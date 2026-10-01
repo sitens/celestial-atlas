@@ -70,6 +70,19 @@
   <span class="note" style="margin:0">FOV</span><input type="range" id="fov" min="2" max="110" value="60" aria-label="Field of view"><span id="fovV" class="note" style="margin:0;width:34px">60°</span>
 </div>
 
+<div id="galInfo"><div class="a" id="galA"></div><div class="b" id="galB"></div></div>
+<div id="galBar">
+  <button class="pbtn" id="gRev" title="Run time backward">⏪</button><button class="pbtn" id="gPlay" title="Play / pause galactic time">▶</button>
+  <select class="fld" id="gSpd" aria-label="Galactic playback speed"><option value="5">5 Myr/s</option><option value="20" selected>20 Myr/s</option><option value="60">60 Myr/s</option><option value="150">150 Myr/s</option></select>
+  <input type="range" id="gT" min="-650" max="650" step="0.5" value="0" aria-label="Galactic time (Myr from now)"><span id="gTv" class="note" style="margin:0;width:92px;font-family:var(--mono)">now</span>
+  <button class="chip" id="gNow">⟲ Now</button><span class="sep"></span>
+  <button class="chip" id="gDrift" title="Add the Galaxy's own motion through space (~560 km/s relative to the CMB): the Sun's path becomes a true helix">Helix through space</button>
+  <span class="note" style="margin:0">Drift ×</span><input type="range" id="gDs" min="5" max="100" value="20" aria-label="Drift speed scale"><span id="gDsv" class="note" style="margin:0;width:34px">20%</span>
+  <button class="chip" id="gFollow" title="Keep the Sun centred">Follow Sun</button>
+  <span class="note" style="margin:0">Vertical ×</span><input type="range" id="gVex" min="1" max="60" value="25" aria-label="Vertical exaggeration"><span id="gVexv" class="note" style="margin:0;width:26px">25</span>
+  <button class="chip" id="gTop">Top</button><button class="chip" id="gEdge">Edge-on</button>
+</div>
+
 <footer id="dock">
   <div id="tlwrap" title="Drag to scrub time · wheel to zoom 1 day ↔ 500 years · double-click to reset"><canvas id="tl"></canvas></div>
   <div class="dockrow">
@@ -81,6 +94,7 @@
     <button class="vbtn" data-v="earthmoon"><kbd>2</kbd>Earth–Moon</button>
     <button class="vbtn" data-v="planet"><kbd>3</kbd>Planet focus</button>
     <button class="vbtn" data-v="sky"><kbd>4</kbd>Sky from here</button>
+    <button class="vbtn" data-v="galaxy"><kbd>5</kbd>Galaxy</button>
     <button class="vbtn" id="btnTour">🎬 Cinematic tour</button>
     <span class="grow"></span>
     <span class="chipset" id="toggles"></span>
@@ -95,6 +109,7 @@
   <p>Every pixel and number is a pure function of one master timestamp. Positions come from <b>Astronomy Engine</b> (Don Cross, MIT) — VSOP87-class planets, a Moon theory, Jupiter's Galilean moons — accurate to about an arcminute for 1700–2200 CE. Other moons use <b>JPL SSD mean elements</b> (epoch J2000; “mean-element accuracy”: good for visuals, not for precise phenomena). Planet orientation uses IAU WGCCRE rotation models. Eclipse shadows are computed analytically per pixel from the true Sun/occluder geometry (exact disc-overlap), so umbra and penumbra land where the ephemeris says. Eclipse times/contacts come from Astronomy Engine's search routines, not from animation.</p>
   <p><b>Limits.</b> 1700–2200 CE: no warning. 1000–1700 and 2200–3000: allowed with a “reduced accuracy” banner. Outside 1000–3000 the picker is disabled. Past dates show the proleptic Gregorian calendar; local time uses today's IANA rules so pre-1970 civil times may differ from history. Star positions are J2000 precessed to the date (no proper motion). Earth city-lights and cloud textures are present-day. Planet surfaces, ring shadows and moon shadows on Jupiter use real geometry, but body sizes in “Explorable” scale are exaggerated.</p>
   <p><b>Data &amp; credits.</b> Geocoding &amp; weather: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC-BY 4.0; forecast, ERA5 historical archive). Planet &amp; Milky Way textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a> (CC BY 4.0, NASA-derived). Earth, Moon, clouds, city lights: three.js example textures (NASA Visible Earth / Blue Marble derived). Hubble galaxies: NASA/ESA (via Wikimedia Commons): NGC 4414, M51, NGC 1300, M104, Antennae. Star &amp; constellation data: Yale Bright Star Catalogue via d3-celestial (BSD). Satellite elements: NASA/JPL SSD. Rendering: three.js (MIT).</p>
+  <p><b>Galaxy view.</b> A schematic Milky Way: 110,000 procedural stars on four logarithmic spiral arms (13° pitch, crossing the Sun line near Reid+2019 positions), a 27° bar and a bulge. The Sun's orbit is integrated in a flat-rotation-curve potential (R₀ 8.18 kpc, v<sub>c</sub> 233 km/s, solar motion U,V,W = 11.1, 12.24, 7.25 km/s): one galactic year ≈ 223 Myr, radial swing 8.1–9.2 kpc, vertical oscillation ±85 pc every ≈ 70 Myr. The vertical wobble is multiplied (slider) so it is visible; the disc is drawn thicker than reality. “Helix through space” adds the Galaxy's ≈ 560 km/s motion relative to the CMB (Sun’s 370 km/s dipole minus its orbital velocity; toward l ≈ 266°, b ≈ 29°) — the path then winds with a pitch of ≈ 125 kpc per galactic year (drawn at 20% by default so the coils show; the Drift slider goes to the real 100%).</p>
   <p>Built by <a href="https://siten.ai/" target="_blank" rel="noopener">Siten Sanghvi</a> · open source (MIT) at <a href="https://github.com/sitens/celestial-atlas" target="_blank" rel="noopener">github.com/sitens/celestial-atlas</a>. Star positions include proper motion from the Hipparcos-derived <a href="https://github.com/astronexus/HYG-Database" target="_blank" rel="noopener">HYG database</a> (CC BY-SA 4.0); the 1000–3000 CE eclipse timeline table is precomputed with Astronomy Engine. Earth cloud cover is a live 20° Open-Meteo grid draped over a static cloud texture.</p>
   <div class="mrow"><button class="btn pri" id="btnTests">Run self-tests</button><span class="note" id="testSum"></span></div>
   <div id="testOut"></div>

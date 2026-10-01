@@ -5,6 +5,8 @@ A cinematic, interactive 3D **Earth & Solar System** for any place on Earth and 
 **Live:** https://siten.ai/atlas/ · **Source:** this repo · MIT
 
 ![Earth, Moon and your place under the Sun](docs/earth.png)
+![The Sun in the Milky Way](docs/galaxy.png)
+![The Sun's helix through space](docs/helix.png)
 
 ## What it does
 
@@ -13,6 +15,7 @@ A cinematic, interactive 3D **Earth & Solar System** for any place on Earth and 
 - **Real astronomy** — [Astronomy Engine](https://github.com/cosinekitty/astronomy) for the Sun, planets, Moon, Galilean moons; JPL SSD mean elements for 14 more moons; IAU rotation models; Saturn's tilted rings. Topocentric alt/az, rise/set, phases, libration.
 - **Eclipses with exact shadows** — per-pixel disc-overlap shading (Moon→Earth, Earth→Moon with red umbra, Jupiter's moons, Saturn's rings), shadow cones at true scale, live obscuration, local contact times, an eclipse finder, and a ground view with corona, diamond ring and "blood moon".
 - **Weather that respects time** — forecast, ERA5 history (1940+) and clearly-labelled climatology; never invented. A live 20° Open-Meteo cloud grid is draped over the globe.
+- **Galaxy view (press 5)** — zoom out to a procedural Milky Way (110,000 stars, four logarithmic spiral arms, bar, bulge, kiloparsec rings) and watch the Sun's real galactic orbit: one lap ≈ 223 Myr, radial swing 8.1–9.2 kpc, a ±85 pc bob through the plane every ≈ 70 Myr (exaggerated ×25 by a slider). Scrub or play ±650 Myr (dinosaur extinction and the Cambrian are marked), and switch on **Helix through space** to add the Galaxy's ≈ 560 km/s drift relative to the CMB so the path becomes a true helix.
 - **Rendering** — Three.js r160, log-depth + floating origin, HDR bloom, Earth relief/night lights/clouds, Hubble galaxies, explorable and true-scale modes, 2,331 stars with proper motion, constellations, cinematic tour.
 
 Accuracy vs JPL Horizons (topocentric, 1969–2026): Sun ≤ 1.2″, Moon ≤ 4.4″, planets ≤ 5″. 1700–2200 CE shows no warning; 1000–1700 and 2200–3000 show a "reduced accuracy" banner (Moon drifts to ~15′ by 2500). See `data/horizons_check.json`.

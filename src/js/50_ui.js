@@ -536,7 +536,7 @@ function writeHash() {
   const L = S.loc, q = new URLSearchParams();
   q.set('loc', `${L.lat.toFixed(4)},${L.lon.toFixed(4)},${Math.round(L.elev || 0)}`); q.set('name', L.name); q.set('tz', tz());
   if (!S.live) q.set('t', new Date(S.t).toISOString().replace(/\.\d+Z$/, 'Z'));
-  q.set('view', S.view); if (S.trueScale) q.set('scale', '1');
+  q.set('view', S.view); if (S.trueScale) q.set('scale', '1'); if (S.view === 'galaxy') { q.set('gt', GV.gt.toFixed(1)); if (GV.drift) q.set('helix', '1'); }
   if (S.view === 'sky') { q.set('az', SKY.az.toFixed(1)); q.set('alt', SKY.alt.toFixed(1)); q.set('fov', SKY.fov.toFixed(1)); }
   else q.set('cam', [CAM.yaw.toFixed(3), CAM.pitch.toFixed(3), CAM.dist.toPrecision(4), CAM.focus].join(','));
   history.replaceState(null, '', '#' + q.toString().replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%2F/g, '/'));
@@ -547,7 +547,7 @@ function readHash() {
   const q = new URLSearchParams(location.hash.slice(1)), o = {};
   const loc = (q.get('loc') || '').split(',').map(Number); if (loc.length >= 2 && isFinite(loc[0]) && isFinite(loc[1])) o.loc = { lat: loc[0], lon: loc[1], elev: loc[2] || 0, name: q.get('name') || `${loc[0]}°, ${loc[1]}°`, tz: q.get('tz') || null };
   if (q.get('t')) { const p = parseISO(q.get('t')); if (p) o.t = utcFromParts(p.y, p.mo, p.d, p.h, p.mi, p.s); }
-  o.view = q.get('view'); o.scale = q.get('scale') === '1';
+  o.view = q.get('view'); o.scale = q.get('scale') === '1'; if (q.get('gt')) { o.gt = +q.get('gt'); o.helix = q.get('helix') === '1'; }
   if (q.get('az')) { o.az = +q.get('az'); o.alt = +q.get('alt'); o.fov = +q.get('fov'); }
   if (q.get('cam')) { const c = q.get('cam').split(','); o.cam = { yaw: +c[0], pitch: +c[1], dist: +c[2], focus: c[3] }; }
   return o;
@@ -586,11 +586,13 @@ function uiTick(now) {
       if (S.selected) renderInfo(S.selected);
       if ($('cloudNote').textContent !== CLOUD.status) $('cloudNote').textContent = CLOUD.status;
       if (S.view === 'sky') renderSkyInfo();
+      if (S.view === 'galaxy') renderGalInfo();
       if (S.live && now - (U.wxLive || 0) > 600000) { U.wxLive = now; U.wxKey = ''; refreshWeather(true); }
     } catch (e) { console.error('panel update', e); }
   }
   const d0 = performance.now(); drawTimeline(); tlEnsure(); const PP = (window.__parts = window.__parts || {}); acc(PP, 'tl', performance.now() - d0);
   if (S.view === 'sky') { if (now - (U.skyT || 0) > 150) { U.skyT = now; renderSkyInfo(); } }
+  if (S.view === 'galaxy' && now - (U.galT || 0) > 90) { U.galT = now; renderGalInfo(); }
   if (now - (U.hashPoll || 0) > 1500) { U.hashPoll = now; if (S.view === 'sky' || ptrs.size) scheduleHash(); }
   window.__fps = FPS;
 }
@@ -609,6 +611,37 @@ function renderSkyInfo() {
   $('skyA').textContent = a; $('skyB').textContent = b;
 }
 
+// ===== galaxy view controls =====
+function syncGalUI() {
+  $('gPlay').textContent = GV.playing ? '⏸' : '▶'; $('gPlay').classList.toggle('on', GV.playing); $('gRev').classList.toggle('on', GV.speed < 0);
+  $('gDrift').classList.toggle('on', GV.drift); $('gFollow').classList.toggle('on', GV.follow); $('gVexv').textContent = GV.vex; $('gDsv').textContent = Math.round(GV.dscale * 100) + '%'; $('gDs').value = Math.round(GV.dscale * 100); $('gVex').value = GV.vex;
+  $('gSpd').value = String(Math.abs(GV.speed)); if (document.activeElement !== $('gT')) $('gT').value = GV.gt;
+  $('gTv').textContent = Math.abs(GV.gt) < 0.05 ? 'now' : (GV.gt > 0 ? '+' : '−') + Math.abs(GV.gt).toFixed(0) + ' Myr';
+}
+function renderGalInfo() {
+  const s = GV.sun; if (!s) return; syncGalUI();
+  const dir = s.y >= 0 ? 'above' : 'below', gt = GV.gt, era = gt > -66 ? 'Cenozoic Era (the age of mammals)' : gt > -252 ? 'Mesozoic Era (dinosaurs)' : gt > -541 ? 'Paleozoic Era' : 'Precambrian';
+  $('galA').textContent = gt === 0 ? 'Our place in the Milky Way — right now' : `The Sun ${gt < 0 ? Math.abs(gt).toFixed(0) + ' million years ago' : gt.toFixed(0) + ' million years from now'}`;
+  $('galB').innerHTML = `${(s.R * LY_PER_KPC).toLocaleString('en-US', { maximumFractionDigits: 0 })} light-years (${s.R.toFixed(2)} kpc) from the Galactic Centre · moving <b>${s.speed.toFixed(0)} km/s</b> · radial speed ${s.vR >= 0 ? '+' : '−'}${Math.abs(s.vR).toFixed(0)} km/s<br>`
+    + `<b>${Math.abs(s.y * 1000).toFixed(0)} pc ${dir}</b> the galactic plane (oscillates ±85 pc every ≈70 Myr — drawn ×${GV.vex}) · ${era}<br>`
+    + `One galactic year ≈ 223 Myr · the Sun has circled ≈ 20 times in 4.6 Gyr · this view: ${(gt / 223.5 >= 0 ? '+' : '−')}${Math.abs(gt / 223.5).toFixed(2)} galactic years`
+    + (GV.drift ? `<br><span style="color:#9cffd0">The whole Galaxy also drifts ≈ ${galDrift.speed.toFixed(0)} km/s toward l ${galDrift.l.toFixed(0)}°, b ${galDrift.b.toFixed(0)}° (Great Attractor) — so the Sun’s path is a helix ≈ ${(Math.hypot(...galDrift.v) * 223.5).toFixed(0)} kpc long per turn (drawn at ${(GV.dscale * 100).toFixed(0)}% of real drift speed so the coils are visible).</span>` : '');
+}
+function helixYaw() { const D = galDrift.v, c = [D[1] * 0 - D[2] * 1, 0, D[0] * 1 - 0]; /* d x up */ return Math.atan2(c[0], c[2]); }
+function wire_galaxy() {
+  $('gPlay').addEventListener('click', () => { GV.playing = !GV.playing; syncGalUI(); });
+  $('gRev').addEventListener('click', () => { GV.speed = -GV.speed; if (!GV.playing) GV.playing = true; syncGalUI(); });
+  $('gSpd').addEventListener('change', e => { GV.speed = (GV.speed < 0 ? -1 : 1) * +e.target.value; });
+  $('gT').addEventListener('input', e => { GV.gt = +e.target.value; syncGalUI(); });
+  $('gNow').addEventListener('click', () => { GV.gt = 0; GV.playing = false; syncGalUI(); });
+  $('gDrift').addEventListener('click', () => { GV.drift = !GV.drift; syncGalUI(); galFly({ yaw: GV.drift ? helixYaw() : GV.yaw, pitch: GV.drift ? 0.4 : 0.95, dist: GV.drift ? 150 : 38, tx: 0, ty: 0, tz: 0, dur: 1800 }); if (GV.drift && !GV.playing) { GV.playing = true; GV.speed = Math.abs(GV.speed) || 20; syncGalUI(); } });
+  $('gFollow').addEventListener('click', () => { GV.follow = !GV.follow; syncGalUI(); if (GV.follow) { const sp = galSunPos(GV.gt); galFly({ yaw: GV.yaw, pitch: GV.pitch, dist: 3, tx: sp.x, ty: sp.y, tz: sp.z, dur: 1800 }); } else galFly({ yaw: GV.yaw, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, dur: 1800 }); });
+  $('gDs').addEventListener('input', e => { GV.dscale = +e.target.value / 100; syncGalUI(); });
+  $('gVex').addEventListener('input', e => { GV.vex = +e.target.value; syncGalUI(); });
+  $('gTop').addEventListener('click', () => galFly({ yaw: GV.yaw, pitch: 1.5, dist: GV.dist, tx: GV.follow ? GV.tx : 0, ty: GV.follow ? GV.ty : 0, tz: GV.follow ? GV.tz : 0, dur: 1200 }));
+  $('gEdge').addEventListener('click', () => galFly({ yaw: GV.yaw, pitch: 0.04, dist: GV.drift ? 135 : Math.min(GV.dist, 30), tx: GV.follow ? GV.tx : 0, ty: GV.follow ? GV.ty : 0, tz: GV.follow ? GV.tz : 0, dur: 1200 }));
+}
+
 // ===== keyboard =====
 function wire_keys() {
   addEventListener('keydown', e => {
@@ -620,7 +653,7 @@ function wire_keys() {
     else if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); const s = k === 'ArrowDown' ? -1 : 1; e.shiftKey ? stepTime('1y', s) : stepTime('1h', s); }
     else if (k === 'n' || k === 'N') goLive();
     else if (k === 'r' || k === 'R') $('btnRev').click();
-    else if (k === '1') setView('system'); else if (k === '2') setView('earthmoon'); else if (k === '3') setView('planet'); else if (k === '4') setView('sky', { reaim: true });
+    else if (k === '1') setView('system'); else if (k === '2') setView('earthmoon'); else if (k === '3') setView('planet'); else if (k === '4') setView('sky', { reaim: true }); else if (k === '5') setView('galaxy');
     else if (k === 'Escape') { document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')); tourCancel(); }
   });
 }
@@ -629,6 +662,7 @@ function wire_keys() {
 async function bootUI() {
   const tb = $('timebar'), setTop = () => document.documentElement.style.setProperty('--top', Math.round(tb.getBoundingClientRect().bottom) + 'px');
   new ResizeObserver(setTop).observe(tb); setTop();
-  wire_picker(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys();
+  const dk = $('dock'), setDock = () => document.documentElement.style.setProperty('--dock', Math.round(dk.getBoundingClientRect().height) + 'px'); new ResizeObserver(setDock).observe(dk); setDock();
+  wire_galaxy(); wire_picker(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys();
   syncPlayUI();
 }
