@@ -1,0 +1,120 @@
+<canvas id="gl" tabindex="0" aria-label="3D solar system"></canvas>
+<div id="labels"></div>
+
+<header id="topbar">
+  <div class="brand"><span class="mark"></span><b>Celestial Atlas</b><small>Earth &amp; Solar System</small></div>
+  <div class="search">
+    <input id="q" type="search" placeholder="Search any city or place…" autocomplete="off" spellcheck="false" aria-label="Search location">
+    <button class="ibtn" id="btnGeo" title="Use my location">◎ Me</button>
+    <button class="ibtn" id="btnManual" title="Enter latitude / longitude">⌖ Lat/Lon</button>
+    <div id="sugg" role="listbox"></div>
+  </div>
+  <div class="clocks">
+    <span id="badge" class="badge live">LIVE</span>
+    <div class="clock"><label>Local · <span id="tzName">—</span></label><b id="clkLocal">—</b></div>
+    <div class="clock"><label>UTC offset</label><b id="clkOff" style="font-size:12px">—</b></div>
+    <div class="clock"><label>UTC</label><b id="clkUTC">—</b></div>
+    <button class="ibtn" id="btnAbout" title="About, sources, self-test">ⓘ</button>
+  </div>
+</header>
+
+<div id="timebar" aria-label="Time travel">
+  <span class="grp">
+    <div class="seg" id="zoneSeg"><button data-z="local" class="on">Location time</button><button data-z="utc">UTC</button></div>
+    <input class="fld" type="date" id="tmDate" min="1000-01-01" max="3000-12-31" aria-label="Date">
+    <input class="fld" type="time" id="tmTime" step="1" aria-label="Time">
+    <input class="fld" type="text" id="tmISO" placeholder="YYYY-MM-DD HH:MM:SS" title="Type an ISO date/time, press Enter" aria-label="ISO date time">
+  </span>
+  <span class="grp">
+    <div class="chipset" id="stepsBack"></div>
+    <button class="chip" id="btnNow" title="Return to the live clock (N)">⟲ Now</button>
+    <div class="chipset" id="stepsFwd"></div>
+  </span>
+  <span class="grp">
+    <select class="fld" id="evSel" aria-label="Event jump"></select>
+    <button class="chip" id="evPrev" title="Previous event">◀ prev</button>
+    <button class="chip" id="evNext" title="Next event">next ▶</button>
+  </span>
+  <span class="grp">
+    <select class="fld" id="preSel" aria-label="Famous moments"></select>
+    <button class="chip" id="btnCopy" title="Copy a shareable link to this exact view">⧉ Copy link</button>
+  </span>
+</div>
+
+<div id="banner"><b>TIME TRAVEL</b><span id="bannerTxt"></span><button id="bannerNow">Return to Now</button></div>
+<div id="rangeWarn"></div>
+
+<div id="mobnav"><button id="mnL">Place</button><button id="mnR">Sky &amp; Eclipses</button></div>
+
+<aside class="panel" id="pLeft">
+  <section class="card" id="cLoc"><h3>Location <span class="src" id="locSrc"></span></h3>
+    <div class="big" id="locName" style="font-size:19px">—</div>
+    <div class="kv" style="margin-top:8px"><span>Latitude</span><span id="locLat">—</span><span>Longitude</span><span id="locLon">—</span><span>Elevation</span><span id="locElev">—</span><span>Time zone</span><span id="locTz">—</span></div>
+    <div class="note" id="locNote"></div>
+  </section>
+  <section class="card" id="cWx"><h3>Weather <span class="src" id="wxSrc"></span></h3><div id="wxBody"><div class="note">Loading…</div></div><div class="note" id="cloudNote"></div></section>
+  <section class="card" id="cObs"><h3>Observing conditions</h3><div id="obsBody"></div></section>
+  <section class="card" id="cInfo"><h3>Selected body</h3><div id="infoBody"><div class="note">Click any planet or moon.</div></div></section>
+</aside>
+
+<aside class="panel" id="pRight">
+  <section class="card"><h3>Sun &amp; Moon <span class="src">at picked time</span></h3><div id="sunmoonBody"></div></section>
+  <section class="card"><h3>Eclipses <button class="btn" id="btnFinder" style="padding:2px 9px;font-size:11px;text-transform:none;letter-spacing:0">Finder</button></h3><div id="eclBody"></div></section>
+  <section class="card"><h3>Planets <span class="src">topocentric</span></h3><div id="planetBody"></div></section>
+</aside>
+
+<div id="skyInfo"><div class="a" id="skyA"></div><div class="b" id="skyB"></div></div>
+<div id="skyBar">
+  <button class="chip" data-aim="sun">☀ Sun</button><button class="chip" data-aim="moon">☾ Moon</button>
+  <button class="chip" data-aim="north">N</button><button class="chip" data-aim="east">E</button><button class="chip" data-aim="south">S</button><button class="chip" data-aim="west">W</button>
+  <span class="note" style="margin:0">FOV</span><input type="range" id="fov" min="2" max="110" value="60" aria-label="Field of view"><span id="fovV" class="note" style="margin:0;width:34px">60°</span>
+</div>
+
+<footer id="dock">
+  <div id="tlwrap" title="Drag to scrub time · wheel to zoom 1 day ↔ 500 years · double-click to reset"><canvas id="tl"></canvas></div>
+  <div class="dockrow">
+    <button class="pbtn" id="btnRev" title="Reverse (R)">⏪</button>
+    <button class="pbtn" id="btnPlay" title="Play / pause (Space)">▶</button>
+    <select class="fld" id="spdSel" aria-label="Playback speed"></select>
+    <span class="sep"></span>
+    <button class="vbtn on" data-v="system"><kbd>1</kbd>Solar System</button>
+    <button class="vbtn" data-v="earthmoon"><kbd>2</kbd>Earth–Moon</button>
+    <button class="vbtn" data-v="planet"><kbd>3</kbd>Planet focus</button>
+    <button class="vbtn" data-v="sky"><kbd>4</kbd>Sky from here</button>
+    <button class="vbtn" id="btnTour">🎬 Cinematic tour</button>
+    <span class="grow"></span>
+    <span class="chipset" id="toggles"></span>
+  </div>
+</footer>
+
+<div id="bars"><div id="cap"></div></div>
+<div id="toast"></div>
+<div id="loading"><div class="ring"></div><small>Loading ephemeris &amp; textures</small></div>
+
+<div class="modal" id="mAbout"><div class="mbox"><button class="x" data-close>✕</button><h2>About · sources · self-test</h2>
+  <p>Every pixel and number is a pure function of one master timestamp. Positions come from <b>Astronomy Engine</b> (Don Cross, MIT) — VSOP87-class planets, a Moon theory, Jupiter's Galilean moons — accurate to about an arcminute for 1700–2200 CE. Other moons use <b>JPL SSD mean elements</b> (epoch J2000; “mean-element accuracy”: good for visuals, not for precise phenomena). Planet orientation uses IAU WGCCRE rotation models. Eclipse shadows are computed analytically per pixel from the true Sun/occluder geometry (exact disc-overlap), so umbra and penumbra land where the ephemeris says. Eclipse times/contacts come from Astronomy Engine's search routines, not from animation.</p>
+  <p><b>Limits.</b> 1700–2200 CE: no warning. 1000–1700 and 2200–3000: allowed with a “reduced accuracy” banner. Outside 1000–3000 the picker is disabled. Past dates show the proleptic Gregorian calendar; local time uses today's IANA rules so pre-1970 civil times may differ from history. Star positions are J2000 precessed to the date (no proper motion). Earth city-lights and cloud textures are present-day. Planet surfaces, ring shadows and moon shadows on Jupiter use real geometry, but body sizes in “Explorable” scale are exaggerated.</p>
+  <p><b>Data &amp; credits.</b> Geocoding &amp; weather: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC-BY 4.0; forecast, ERA5 historical archive). Planet &amp; Milky Way textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a> (CC BY 4.0, NASA-derived). Earth, Moon, clouds, city lights: three.js example textures (NASA Visible Earth / Blue Marble derived). Hubble galaxies: NASA/ESA (via Wikimedia Commons): NGC 4414, M51, NGC 1300, M104, Antennae. Star &amp; constellation data: Yale Bright Star Catalogue via d3-celestial (BSD). Satellite elements: NASA/JPL SSD. Rendering: three.js (MIT).</p>
+  <p>Built by <a href="https://siten.ai/" target="_blank" rel="noopener">Siten Sanghvi</a> · open source (MIT) at <a href="https://github.com/sitens/celestial-atlas" target="_blank" rel="noopener">github.com/sitens/celestial-atlas</a>. Star positions include proper motion from the Hipparcos-derived <a href="https://github.com/astronexus/HYG-Database" target="_blank" rel="noopener">HYG database</a> (CC BY-SA 4.0); the 1000–3000 CE eclipse timeline table is precomputed with Astronomy Engine. Earth cloud cover is a live 20° Open-Meteo grid draped over a static cloud texture.</p>
+  <div class="mrow"><button class="btn pri" id="btnTests">Run self-tests</button><span class="note" id="testSum"></span></div>
+  <div id="testOut"></div>
+</div></div>
+
+<div class="modal" id="mManual"><div class="mbox" style="width:min(460px,100%)"><button class="x" data-close>✕</button><h2>Enter coordinates</h2>
+  <div class="mrow"><label>Name</label><input class="fld" id="mName" placeholder="optional"></div>
+  <div class="mrow"><label>Latitude</label><input class="fld" id="mLat" type="number" step="any" min="-90" max="90" placeholder="40.4168"></div>
+  <div class="mrow"><label>Longitude</label><input class="fld" id="mLon" type="number" step="any" min="-180" max="180" placeholder="-3.7038"></div>
+  <div class="mrow"><label>Elevation m</label><input class="fld" id="mEle" type="number" step="any" placeholder="0"></div>
+  <div class="mrow"><span class="note" id="mErr"></span><span style="flex:1"></span><button class="btn pri" id="mGo">Go there</button></div></div></div>
+
+<div class="modal" id="mBirth"><div class="mbox" style="width:min(480px,100%)"><button class="x" data-close>✕</button><h2>My birth sky · any date</h2>
+  <p>Pick a birth date/time (or any birthday). The place defaults to your current location — search a city first to change it.</p>
+  <div class="mrow"><label>Date</label><input class="fld" id="bDate" type="date" min="1000-01-01" max="3000-12-31"></div>
+  <div class="mrow"><label>Time</label><input class="fld" id="bTime" type="time" value="12:00"></div>
+  <div class="mrow"><label>Place</label><span id="bPlace" class="note" style="margin:0"></span></div>
+  <div class="mrow"><span style="flex:1"></span><button class="btn" id="bYear">Birthday this year</button><button class="btn pri" id="bGo">Show that sky</button></div></div></div>
+
+<div class="modal" id="mEcl"><div class="mbox"><button class="x" data-close>✕</button><h2>Eclipse finder</h2>
+  <div class="mrow"><label>Window</label><select class="fld" id="fWin"><option value="1">± 1 year</option><option value="5">± 5 years</option><option value="10" selected>± 10 years</option><option value="25">± 25 years</option></select>
+    <label style="width:auto"><input type="checkbox" id="fVis"> only visible from here</label><span class="note" id="fSum" style="margin:0"></span></div>
+  <div id="fList"></div></div></div>

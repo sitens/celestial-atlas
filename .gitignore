@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.pyc
+data/shots/
+data/verify_*.txt
+data/eclipse_table.log
+data/raw/sat_elem.html
+.DS_Store
+data/raw/hyg.csv.gz

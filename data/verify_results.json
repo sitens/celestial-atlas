@@ -1,0 +1,337 @@
+[
+ [
+  "A1 boots with no console errors / page errors",
+  true,
+  "[]"
+ ],
+ [
+  "A2 no WebGL shader warnings",
+  true,
+  "[]"
+ ],
+ [
+  "A3 WebGL2 + logarithmic depth buffer",
+  true,
+  ""
+ ],
+ [
+  "B view 'system' renders (non-blank)",
+  true,
+  "variance 366.8"
+ ],
+ [
+  "B view 'earthmoon' renders (non-blank)",
+  true,
+  "variance 249.4"
+ ],
+ [
+  "B view 'planet' renders (non-blank)",
+  true,
+  "variance 661.8"
+ ],
+ [
+  "B view 'sky' renders (non-blank)",
+  true,
+  "variance 3250.2"
+ ],
+ [
+  "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
+  true,
+  "Tokyo, Tokyo, Japan | Asia/Tokyo | 8 suggestions"
+ ],
+ [
+  "C weather card for Tokyo",
+  true,
+  "22\u00b0C \u2600\ufe0f Clear sky Feels like 26 \u00b0C Humidity 92 % Wind 3 km/h SW \u00b7 gust 9 Pressure 1010 hPa"
+ ],
+ [
+  "C sky view for Tokyo computed",
+  true,
+  "{\"sun\":-47.021117420982534,\"L\":0}"
+ ],
+ [
+  "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
+  true,
+  "Sydney, New South Wales, Australia | Australia/Sydney | 8 suggestions"
+ ],
+ [
+  "C weather card for Sydney",
+  true,
+  "20\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 18 \u00b0C Humidity 49 % Wind 11 km/h N \u00b7 gust 22 Pressure 1022"
+ ],
+ [
+  "C sky view for Sydney computed",
+  true,
+  "{\"sun\":-48.613144524984676,\"L\":0}"
+ ],
+ [
+  "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
+  true,
+  "Madrid, Madrid, Spain | Europe/Madrid | 8 suggestions"
+ ],
+ [
+  "C weather card for Madrid",
+  true,
+  "26\u00b0C \u2601\ufe0f Overcast Feels like 26 \u00b0C Humidity 38 % Wind 6 km/h ENE \u00b7 gust 23 Pressure 1020 hP"
+ ],
+ [
+  "C sky view for Madrid computed",
+  true,
+  "{\"sun\":45.875166858590504,\"L\":1}"
+ ],
+ [
+  "D ISO typing '1969-07-20 20:17:00' (UTC)",
+  true,
+  "-14182980000"
+ ],
+ [
+  "D mode flips to TIME TRAVEL",
+  true,
+  ""
+ ],
+ [
+  "D banner visible",
+  true,
+  ""
+ ],
+ [
+  "D invalid date '2023-02-30' rejected (field flagged, time unchanged)",
+  true,
+  ""
+ ],
+ [
+  "D year 999 rejected with explanation",
+  true,
+  "Outside 1000\u20133000 CE the planetary and lunar theories are not valid \u2014 "
+ ],
+ [
+  "E +1 day across leap day -> 2024-02-29",
+  true,
+  "1709208000000"
+ ],
+ [
+  "E +1 year from Feb 29 -> Feb 28 (clamped)",
+  true,
+  "1740744000000"
+ ],
+ [
+  "E year-end rollover 23:59 +1 min -> 2025-01-01 00:00",
+  true,
+  "1735689600000"
+ ],
+ [
+  "E +1 month from Jan 31 -> Feb 29 (clamped)",
+  true,
+  "1709193600000"
+ ],
+ [
+  "E +1 synodic month = +29.5306 d",
+  true,
+  ""
+ ],
+ [
+  "E -1 synodic month round trip",
+  true,
+  ""
+ ],
+ [
+  "G NY 2024-03-10 02:30 (non-existent) -> moved to 03:30 EDT = 07:30Z",
+  true,
+  "1710055800000"
+ ],
+ [
+  "G DST-gap explained to user",
+  true,
+  ""
+ ],
+ [
+  "G +1 hour across spring-forward lands on 03:30 EDT (07:30Z)",
+  true,
+  "1710055800000"
+ ],
+ [
+  "G fall-back ambiguity resolves to first 01:30 (EDT = 05:30Z)",
+  true,
+  "1730611800000"
+ ],
+ [
+  "G UTC offset shown beside local time",
+  true,
+  "UTC\u221204:00"
+ ],
+ [
+  "D native date input applies (location time)",
+  true,
+  "2020-05-17 01:30:00"
+ ],
+ [
+  "I timeline drag scrubs time (~+6 d of the 30-day span)",
+  true,
+  "6.37 d"
+ ],
+ [
+  "I wheel zooms the timeline out (span grows)",
+  true,
+  "149 d"
+ ],
+ [
+  "I zoom capped at 500 years",
+  true,
+  "500.0 y"
+ ],
+ [
+  "I zoom floor 1 day",
+  true,
+  ""
+ ],
+ [
+  "I 500-year timeline shows eclipse markers instantly (precomputed table)",
+  false,
+  "0 eclipse markers"
+ ],
+ [
+  "V1 relief normal map + live cloud grid active",
+  true,
+  "Earth clouds: live Open-Meteo grid (20\u00b0), 14:00 UTC \u00b7 ERA5 history"
+ ],
+ [
+  "V2 bloom pipeline available",
+  true,
+  ""
+ ],
+ [
+  "V3 proper motion: Sirius moves ~0.36 deg over 974 yr",
+  true,
+  "0.362 deg"
+ ],
+ [
+  "J share link encodes loc, t, view",
+  true,
+  "#loc=40.7128,-74.0060,10&name=New+York,+NY,+USA&tz=America/New_York&t=2024-04-08T18:42:37Z&view=sky&scale=1&az=222.4&alt=49.5&fov="
+ ],
+ [
+  "J hash restores time, view and place in a fresh page",
+  true,
+  "{'t': 1712601757000, 'view': 'sky', 'live': False, 'name': 'New York, NY, USA'}"
+ ],
+ [
+  "K 'Now' returns to the LIVE clock",
+  true,
+  ""
+ ],
+ [
+  "L past date uses archive data, labelled 'Historical (ERA5 reanalysis)'",
+  true,
+  "26\u00b0C \u2601\ufe0f Overcast Feels like 28 \u00b0C Humidity 57 % Wind 17 km/h S \u00b7 gust 34 Pressure 1012 hPa Precipita"
+ ],
+ [
+  "L +1 year: 'No forecast available' + labelled climatology",
+  true,
+  "No forecast available this far ahead. 19\u00b0C typical Mean cloud cover 26 % Chance of rain 0 % Typical wind 8 km/h Climatol"
+ ],
+ [
+  "L before 1940: 'No weather data'",
+  true,
+  "No weather data before 1940."
+ ],
+ [
+  "M event jump: next solar eclipse after 2026-09-30 = 2027-02-06",
+  true,
+  "2027-02-06T15:59:32.957Z"
+ ],
+ [
+  "M event jump: previous solar eclipse = 2026-08-12",
+  true,
+  "2026-08-12T17:45:46.794Z"
+ ],
+ [
+  "M event jump: next full moon (2026-08-28)",
+  true,
+  "2026-08-28T04:19:06.085Z"
+ ],
+ [
+  "M preset 2024 total eclipse -> Dallas at totality",
+  true,
+  "2024-04-08T18:42:37.171Z"
+ ],
+ [
+  "M eclipse card shows TOTALITY",
+  true,
+  ""
+ ],
+ [
+  "M eclipse finder lists eclipses within +-10 y",
+  true,
+  "91 rows"
+ ],
+ [
+  "N in-app self-tests (round-trips, DST, 1582, leap years, eclipses)",
+  true,
+  "all 35 passed"
+ ],
+ [
+  "O cinematic tour runs (letterbox + caption)",
+  true,
+  "Inner planets, exactly where they are"
+ ],
+ [
+  "P FPS, solar-system view (Intel HD 4600, 1440x900)",
+  true,
+  "43 fps @ dpr 0.70, 77 draw calls, 124486 tris"
+ ],
+ [
+  "P FPS, Earth close-up",
+  true,
+  "50 fps @ dpr 0.70"
+ ],
+ [
+  "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
+  true,
+  "spinBlend=0.002"
+ ],
+ [
+  "Q offline weather/geocode: app still boots",
+  true,
+  ""
+ ],
+ [
+  "Q failed geocode shows a message, no crash",
+  true,
+  "Geocoding unavailable \u2014 try \u201cLat/Lon\u201d."
+ ],
+ [
+  "Q weather failure shows 'unavailable', UI keeps working",
+  true,
+  "Weather unavailable (Failed to fetch). The rest of the app is unaffect"
+ ],
+ [
+  "Q sky view works without network",
+  true,
+  ""
+ ],
+ [
+  "Q no uncaught exceptions while offline",
+  true,
+  "[]"
+ ],
+ [
+  "R missing library -> loading screen explains (no blank page)",
+  true,
+  "STILL LOADING\u2026 (THREE.JS FROM CDN?)"
+ ],
+ [
+  "S mobile 390px: no horizontal page scroll",
+  true,
+  "390"
+ ],
+ [
+  "S mobile panels open as sheets",
+  true,
+  ""
+ ],
+ [
+  "T final file size <= 16 MB",
+  true,
+  "2.08 MB"
+ ]
+]
