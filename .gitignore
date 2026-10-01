@@ -7,3 +7,10 @@ data/eclipse_table.log
 data/raw/sat_elem.html
 .DS_Store
 data/raw/hyg.csv.gz
+
+# Relay project-memory files stay local, never pushed
+AUDIT_LOG.md
+MEMORY.md
+context.md
+status.md
+tasks.md
