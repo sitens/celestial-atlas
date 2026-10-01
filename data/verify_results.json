@@ -17,22 +17,22 @@
  [
   "B view 'system' renders (non-blank)",
   true,
-  "variance 366.8"
+  "variance 361.5"
  ],
  [
   "B view 'earthmoon' renders (non-blank)",
   true,
-  "variance 249.4"
+  "variance 249.2"
  ],
  [
   "B view 'planet' renders (non-blank)",
   true,
-  "variance 661.8"
+  "variance 661.1"
  ],
  [
   "B view 'sky' renders (non-blank)",
   true,
-  "variance 3250.2"
+  "variance 3193.4"
  ],
  [
   "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
@@ -42,12 +42,12 @@
  [
   "C weather card for Tokyo",
   true,
-  "22\u00b0C \u2600\ufe0f Clear sky Feels like 26 \u00b0C Humidity 92 % Wind 3 km/h SW \u00b7 gust 9 Pressure 1010 hPa"
+  "22\u00b0C \u2600\ufe0f Clear sky Feels like 27 \u00b0C Humidity 95 % Wind 3 km/h SW \u00b7 gust 9 Pressure 1010 hPa"
  ],
  [
   "C sky view for Tokyo computed",
   true,
-  "{\"sun\":-47.021117420982534,\"L\":0}"
+  "{\"sun\":-47.6494022190964,\"L\":0}"
  ],
  [
   "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
@@ -62,7 +62,7 @@
  [
   "C sky view for Sydney computed",
   true,
-  "{\"sun\":-48.613144524984676,\"L\":0}"
+  "{\"sun\":-49.02361434222058,\"L\":0}"
  ],
  [
   "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
@@ -77,7 +77,7 @@
  [
   "C sky view for Madrid computed",
   true,
-  "{\"sun\":45.875166858590504,\"L\":1}"
+  "{\"sun\":45.73441672018364,\"L\":1}"
  ],
  [
   "D ISO typing '1969-07-20 20:17:00' (UTC)",
@@ -180,14 +180,14 @@
   "500.0 y"
  ],
  [
+  "I 500-year timeline shows eclipse markers instantly (precomputed table)",
+  true,
+  "2779 eclipse markers"
+ ],
+ [
   "I zoom floor 1 day",
   true,
   ""
- ],
- [
-  "I 500-year timeline shows eclipse markers instantly (precomputed table)",
-  false,
-  "0 eclipse markers"
  ],
  [
   "V1 relief normal map + live cloud grid active",
@@ -222,12 +222,12 @@
  [
   "L past date uses archive data, labelled 'Historical (ERA5 reanalysis)'",
   true,
-  "26\u00b0C \u2601\ufe0f Overcast Feels like 28 \u00b0C Humidity 57 % Wind 17 km/h S \u00b7 gust 34 Pressure 1012 hPa Precipita"
+  "18\u00b0C \u2601\ufe0f Overcast Feels like 16 \u00b0C Humidity 33 % Wind 6 km/h SW \u00b7 gust 18 Pressure 1020 hPa Precipita"
  ],
  [
   "L +1 year: 'No forecast available' + labelled climatology",
   true,
-  "No forecast available this far ahead. 19\u00b0C typical Mean cloud cover 26 % Chance of rain 0 % Typical wind 8 km/h Climatol"
+  "No forecast available this far ahead. 20\u00b0C typical Mean cloud cover 31 % Chance of rain 0 % Typical wind 10 km/h Climato"
  ],
  [
   "L before 1940: 'No weather data'",
@@ -277,17 +277,17 @@
  [
   "P FPS, solar-system view (Intel HD 4600, 1440x900)",
   true,
-  "43 fps @ dpr 0.70, 77 draw calls, 124486 tris"
+  "46 fps @ dpr 0.78, 1 draw calls, 2 tris"
  ],
  [
   "P FPS, Earth close-up",
   true,
-  "50 fps @ dpr 0.70"
+  "38 fps @ dpr 0.78"
  ],
  [
   "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
   true,
-  "spinBlend=0.002"
+  "spinBlend=0.001"
  ],
  [
   "Q offline weather/geocode: app still boots",
