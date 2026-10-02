@@ -4,7 +4,7 @@ let ST = null; // latest ephemeris state
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const wrapPi = a => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
-function camLimits() { const r = rVis(CAM.focus); return { min: r * 1.06, max: S.trueScale ? 8e7 : 900 }; }
+function camLimits() { const r = rVis(CAM.focus); return { min: r * 1.06, max: S.trueScale ? 2e9 : 900 }; }
 
 // ---------- camera control ----------
 function focusWorld() { return ST ? worldPos(CAM.focus, ST) : [0, 0, 0]; }
@@ -118,7 +118,7 @@ function focusBody(id, opts = {}) {
   else { S.view = 'planet'; markView(); }
 }
 function markView() { document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view)); document.body.classList.toggle('galaxy', S.view === 'galaxy'); updateSkyUI(); }
-function updateSkyUI() { const gal = S.view === 'galaxy'; $('galBar').style.display = gal ? 'flex' : 'none'; $('galInfo').style.display = gal ? 'block' : 'none'; const sky = S.view === 'sky'; $('skyBar').style.display = sky ? 'flex' : 'none'; $('skyInfo').style.display = sky ? 'block' : 'none'; }
+function updateSkyUI() { if ($('hxBar')) $('hxBar').style.display = HX.on && S.view !== 'sky' && S.view !== 'galaxy' ? 'flex' : 'none'; const gal = S.view === 'galaxy'; $('galBar').style.display = gal ? 'flex' : 'none'; $('galInfo').style.display = gal ? 'block' : 'none'; const sky = S.view === 'sky'; $('skyBar').style.display = sky ? 'flex' : 'none'; $('skyInfo').style.display = sky ? 'block' : 'none'; }
 function setScale(tr, keepCam) {
   if (S.trueScale === tr) return;
   const r0 = rVis(CAM.focus); S.trueScale = tr; const r1 = rVis(CAM.focus);
@@ -204,8 +204,12 @@ async function runTour() {
     () => { setScale(false); cap('Jupiter and its Galilean moons'); flyTo({ focus: 'Jupiter', dist: rVis('Jupiter') * 12, pitch: 0.22, yaw: 0.6, dur: 3800 }); return 6400; },
     () => { cap('Saturn — rings tilted toward the Sun'); flyTo({ focus: 'Saturn', dist: rVis('Saturn') * 11, pitch: 0.3, yaw: 0.9, dur: 3600 }); return 6000; },
     () => { cap('Back to the big picture'); flyTo({ focus: 'Sun', dist: 175, pitch: 0.5, yaw: 0.55, dur: 3600 }); return 5000; },
-    () => { cap('Zooming out to the Milky Way — the Sun circles the Galactic Centre every ~223 million years'); enterGalaxy({ dur: 7000 }); GV.gt = 0; GV.playing = false; return 8500; },
-    () => { cap('…bobbing through the disc every ~70 Myr, a helix through space'); GV.drift = true; syncGalUI(); galFly({ yaw: helixYaw(), pitch: 0.4, dist: 150, tx: 0, ty: 0, tz: 0, dur: 5000 }); GV.speed = 60; GV.playing = true; return 9000; },
+    () => { cap('Press on: the Sun carries the whole Solar System through the Galaxy at 245 km/s — every planet corkscrews behind it'); GV.playing = false; setHelix(true, { noPlay: true }); S.live = false; S.playing = true; S.speed = 2629800; syncPlayUI(); hxFrame(); return 7500; },
+    () => { cap('Zooming out ×10 billion — the Sun’s path becomes an orbit around the Milky Way: one lap every ~223 million years'); setHelix(false, { noFly: true }); S.playing = false; syncPlayUI(); enterGalaxy({ dur: 7000 }); GV.gt = 0; GV.playing = false; return 8500; },
+    () => { cap('…bobbing through the disc every ~70 Myr — and the Galaxy itself is moving, so the path is a helix'); GV.drift = true; syncGalUI(); galFly({ yaw: helixYaw(), pitch: 0.4, dist: 150, tx: 0, ty: 0, tz: 0, dur: 5000 }); GV.speed = 60; GV.playing = true; return 9000; },
+    () => { cap('Our neighbours: the Magellanic Clouds, dwarf galaxies — and Andromeda, falling toward us'); GV.drift = false; GV.playing = false; syncGalUI(); galScaleTo('sat', 3500); return 5500; },
+    () => { galScaleTo('lg', 4500); cap('The Local Group — Andromeda (M31) approaches at 110 km/s; merger in ~4–5 billion years'); return 7000; },
+    () => { galScaleTo('lan', 6000); cap('Laniakea — the whole Local Group flows at ~600 km/s toward the Great Attractor'); return 9000; },
   ];
   for (const st of steps) { if (tok !== tourToken) return; const wait = st(); await sleep(wait, tok); }
   if (tok === tourToken) { GV.playing = false; GV.drift = false; GV.gt = 0; syncGalUI(); tourCancel(); S.view = 'system'; markView(); }

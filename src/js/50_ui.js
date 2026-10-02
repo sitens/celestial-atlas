@@ -491,13 +491,13 @@ function wire_timeline() {
 }
 
 // ===== toggles / views / misc =====
-const TOGGLES = [['bloom', 'Bloom'], ['orbits', 'Orbits'], ['trails', 'Trails'], ['labels', 'Labels'], ['moons', 'Moons'], ['constellations', 'Constellations'], ['trueScale', 'True scale'], ['shadows', 'Shadows'], ['clouds', 'Clouds'], ['liveClouds', 'Live clouds']];
+const TOGGLES = [['helix', 'Helix'], ['bloom', 'Bloom'], ['orbits', 'Orbits'], ['trails', 'Trails'], ['labels', 'Labels'], ['moons', 'Moons'], ['constellations', 'Constellations'], ['trueScale', 'True scale'], ['shadows', 'Shadows'], ['clouds', 'Clouds'], ['liveClouds', 'Live clouds']];
 function wire_toggles() {
   const box = $('toggles');
   for (const [k, n] of TOGGLES) {
     const b = document.createElement('button'); b.className = 'chip' + ((k === 'trueScale' ? S.trueScale : S.tg[k]) ? ' on' : ''); b.dataset.tg = k; b.textContent = n;
     b.title = k === 'trueScale' ? 'Real sizes and distances (1 unit = 1000 km)' : k === 'shadows' ? 'Shadow cones (true scale). Pixel shadows are always on.' : n;
-    b.addEventListener('click', () => { if (k === 'trueScale') { setScale(!S.trueScale); } else { S.tg[k] = !S.tg[k]; b.classList.toggle('on', S.tg[k]); if (k === 'trails') { trailAnchor = null; $('trSpan').style.display = S.tg.trails ? '' : 'none'; } if (k === 'liveClouds') scheduleClouds(); } scheduleHash(); });
+    b.addEventListener('click', () => { if (k === 'helix') { setHelix(!HX.on); } else if (k === 'trueScale') { setScale(!S.trueScale); hxNote(); } else { S.tg[k] = !S.tg[k]; b.classList.toggle('on', S.tg[k]); if (k === 'trails') { trailAnchor = null; $('trSpan').style.display = S.tg.trails ? '' : 'none'; } if (k === 'liveClouds') scheduleClouds(); } scheduleHash(); });
     box.appendChild(b);
     if (k === 'trails') { const s = document.createElement('select'); s.id = 'trSpan'; s.className = 'fld'; s.style.cssText = 'height:26px;display:none;font-size:11px'; s.innerHTML = '<option value="30">±30 d</option><option value="365" selected>±1 y</option><option value="3650">±10 y</option>'; s.addEventListener('change', () => { S.trailSpan = +s.value; trailAnchor = null; }); box.appendChild(s); }
   }
@@ -536,7 +536,7 @@ function writeHash() {
   const L = S.loc, q = new URLSearchParams();
   q.set('loc', `${L.lat.toFixed(4)},${L.lon.toFixed(4)},${Math.round(L.elev || 0)}`); q.set('name', L.name); q.set('tz', tz());
   if (!S.live) q.set('t', new Date(S.t).toISOString().replace(/\.\d+Z$/, 'Z'));
-  q.set('view', S.view); if (S.trueScale) q.set('scale', '1'); if (S.view === 'galaxy') { q.set('gt', GV.gt.toFixed(1)); if (GV.drift) q.set('helix', '1'); }
+  q.set('view', S.view); if (S.trueScale) q.set('scale', '1'); if (HX.on) q.set('hx', '1'); if (S.view === 'galaxy') { q.set('gt', GV.gt.toFixed(1)); if (GV.drift) q.set('helix', '1'); }
   if (S.view === 'sky') { q.set('az', SKY.az.toFixed(1)); q.set('alt', SKY.alt.toFixed(1)); q.set('fov', SKY.fov.toFixed(1)); }
   else q.set('cam', [CAM.yaw.toFixed(3), CAM.pitch.toFixed(3), CAM.dist.toPrecision(4), CAM.focus].join(','));
   history.replaceState(null, '', '#' + q.toString().replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%2F/g, '/'));
@@ -547,7 +547,7 @@ function readHash() {
   const q = new URLSearchParams(location.hash.slice(1)), o = {};
   const loc = (q.get('loc') || '').split(',').map(Number); if (loc.length >= 2 && isFinite(loc[0]) && isFinite(loc[1])) o.loc = { lat: loc[0], lon: loc[1], elev: loc[2] || 0, name: q.get('name') || `${loc[0]}°, ${loc[1]}°`, tz: q.get('tz') || null };
   if (q.get('t')) { const p = parseISO(q.get('t')); if (p) o.t = utcFromParts(p.y, p.mo, p.d, p.h, p.mi, p.s); }
-  o.view = q.get('view'); o.scale = q.get('scale') === '1'; if (q.get('gt')) { o.gt = +q.get('gt'); o.helix = q.get('helix') === '1'; }
+  o.hx = q.get('hx') === '1'; o.view = q.get('view'); o.scale = q.get('scale') === '1'; if (q.get('gt')) { o.gt = +q.get('gt'); o.helix = q.get('helix') === '1'; }
   if (q.get('az')) { o.az = +q.get('az'); o.alt = +q.get('alt'); o.fov = +q.get('fov'); }
   if (q.get('cam')) { const c = q.get('cam').split(','); o.cam = { yaw: +c[0], pitch: +c[1], dist: +c[2], focus: c[3] }; }
   return o;
@@ -587,6 +587,7 @@ function uiTick(now) {
       if ($('cloudNote').textContent !== CLOUD.status) $('cloudNote').textContent = CLOUD.status;
       if (S.view === 'sky') renderSkyInfo();
       if (S.view === 'galaxy') renderGalInfo();
+      if (HX.on) hxNote();
       if (S.live && now - (U.wxLive || 0) > 600000) { U.wxLive = now; U.wxKey = ''; refreshWeather(true); }
     } catch (e) { console.error('panel update', e); }
   }
@@ -619,16 +620,48 @@ function syncGalUI() {
   $('gTv').textContent = Math.abs(GV.gt) < 0.05 ? 'now' : (GV.gt > 0 ? '+' : '−') + Math.abs(GV.gt).toFixed(0) + ' Myr';
 }
 function renderGalInfo() {
-  const s = GV.sun; if (!s) return; syncGalUI();
+  const s = GV.sun; if (!s) return; syncGalUI(); drawArmStrip();
   const dir = s.y >= 0 ? 'above' : 'below', gt = GV.gt, era = gt > -66 ? 'Cenozoic Era (the age of mammals)' : gt > -252 ? 'Mesozoic Era (dinosaurs)' : gt > -541 ? 'Paleozoic Era' : 'Precambrian';
   $('galA').textContent = gt === 0 ? 'Our place in the Milky Way — right now' : `The Sun ${gt < 0 ? Math.abs(gt).toFixed(0) + ' million years ago' : gt.toFixed(0) + ' million years from now'}`;
   $('galB').innerHTML = `${(s.R * LY_PER_KPC).toLocaleString('en-US', { maximumFractionDigits: 0 })} light-years (${s.R.toFixed(2)} kpc) from the Galactic Centre · moving <b>${s.speed.toFixed(0)} km/s</b> · radial speed ${s.vR >= 0 ? '+' : '−'}${Math.abs(s.vR).toFixed(0)} km/s<br>`
     + `<b>${Math.abs(s.y * 1000).toFixed(0)} pc ${dir}</b> the galactic plane (oscillates ±85 pc every ≈70 Myr — drawn ×${GV.vex}) · ${era}<br>`
+    + `${(() => { const n = nearestArm(gt, GV.omega); return n.inside ? `<b>Inside the ${ARMS[n.arm].name}</b> (model, Ωp ${GV.omega})` : `Between arms — nearest: ${ARMS[n.arm].name}, ${Math.abs(n.dist).toFixed(1)} kpc away (model, Ωp ${GV.omega})`; })()}<br>`
     + `One galactic year ≈ 223 Myr · the Sun has circled ≈ 20 times in 4.6 Gyr · this view: ${(gt / 223.5 >= 0 ? '+' : '−')}${Math.abs(gt / 223.5).toFixed(2)} galactic years`
     + (GV.drift ? `<br><span style="color:#9cffd0">The whole Galaxy also drifts ≈ ${galDrift.speed.toFixed(0)} km/s toward l ${galDrift.l.toFixed(0)}°, b ${galDrift.b.toFixed(0)}° (Great Attractor) — so the Sun’s path is a helix ≈ ${(Math.hypot(...galDrift.v) * 223.5).toFixed(0)} kpc long per turn (drawn at ${(GV.dscale * 100).toFixed(0)}% of real drift speed so the coils are visible).</span>` : '');
 }
 function helixYaw() { const D = galDrift.v, c = [D[1] * 0 - D[2] * 1, 0, D[0] * 1 - 0]; /* d x up */ return Math.atan2(c[0], c[2]); }
+function hxNote() { if ($('hxNote') && HX.u) $('hxNote').textContent = hxPitchNote(); }
+function wire_helix() {
+  $('hxSpan').addEventListener('input', e => { HX.span = +e.target.value; $('hxSpanV').textContent = HX.span + ' y'; hxNote(); });
+  $('hxK').addEventListener('input', e => { HX.K = +e.target.value; $('hxKV').textContent = HX.K; hxNote(); });
+  $('hxGal').addEventListener('click', () => { setHelix(false, { noFly: true }); setView('galaxy'); });
+  $('hxOff').addEventListener('click', () => setHelix(false, { noFly: true }));
+}
+const ARM_COL = ['#7cc4ff', '#ffd27a', '#ff8fa8', '#a6f0a0'];
+function drawArmStrip() {
+  const cv = $('gArms'); if (!cv || !GV.ready) return;
+  if (GV.crossOmega !== GV.omega) { GV.cross = armCrossings(GV.omega); GV.crossOmega = GV.omega; }
+  const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = 38; if (!w) return; if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const X = t => (t + GT_MAX) / (2 * GT_MAX) * w;
+  g.font = '9px ui-monospace,Consolas,monospace'; g.textBaseline = 'alphabetic';
+  g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(0, 14, w, 10);
+  for (const s of GV.cross) { g.fillStyle = ARM_COL[s.arm]; g.fillRect(X(s.t0), 12, Math.max(2, X(s.t1) - X(s.t0)), 14); }
+  for (const m of MASS_EXT) { g.fillStyle = '#ff6b6b'; g.fillRect(X(-m[0]) - 0.5, 4, 1.5, 8); }
+  g.fillStyle = '#7d89a3'; for (const t of [-600, -400, -200, 0, 200, 400, 600]) { g.fillRect(X(t), 28, 1, 4); g.fillText((t > 0 ? '+' : t < 0 ? '\u2212' : '') + Math.abs(t), X(t) + 3, 37); }
+  g.fillStyle = '#ff6b6b'; g.fillText('mass extinctions', 4, 9);
+  g.strokeStyle = '#ffb454'; g.lineWidth = 2; g.beginPath(); g.moveTo(X(GV.gt), 0); g.lineTo(X(GV.gt), h); g.stroke();
+}
 function wire_galaxy() {
+  $('gScales').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { galScaleTo(b.dataset.s); $('gScales').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }));
+  $('gArt').addEventListener('click', () => { GV.art = !GV.art; $('gArt').classList.toggle('on', GV.art); });
+  $('gOmega').addEventListener('change', e => { GV.omega = +e.target.value; drawArmStrip(); });
+  $('gArms').addEventListener('click', e => { const r = e.target.getBoundingClientRect(); GV.gt = ((e.clientX - r.left) / r.width * 2 - 1) * GT_MAX; GV.playing = false; syncGalUI(); });
+  $('gArms').addEventListener('mousemove', e => {
+    const r = e.target.getBoundingClientRect(), t = ((e.clientX - r.left) / r.width * 2 - 1) * GT_MAX; let txt = (t < 0 ? Math.abs(t).toFixed(0) + ' Myr ago' : '+' + t.toFixed(0) + ' Myr');
+    const s = (GV.cross || []).find(q => t >= q.t0 && t <= q.t1); if (s) txt += ` · inside the ${ARMS[s.arm].name} (${Math.round(s.t0)}…${Math.round(s.t1)})`;
+    const me = MASS_EXT.find(m => Math.abs(-m[0] - t) < 6); if (me) txt += ` · ${me[1]} extinction`; e.target.title = txt;
+  });
   $('gPlay').addEventListener('click', () => { GV.playing = !GV.playing; syncGalUI(); });
   $('gRev').addEventListener('click', () => { GV.speed = -GV.speed; if (!GV.playing) GV.playing = true; syncGalUI(); });
   $('gSpd').addEventListener('change', e => { GV.speed = (GV.speed < 0 ? -1 : 1) * +e.target.value; });
@@ -663,6 +696,6 @@ async function bootUI() {
   const tb = $('timebar'), setTop = () => document.documentElement.style.setProperty('--top', Math.round(tb.getBoundingClientRect().bottom) + 'px');
   new ResizeObserver(setTop).observe(tb); setTop();
   const dk = $('dock'), setDock = () => document.documentElement.style.setProperty('--dock', Math.round(dk.getBoundingClientRect().height) + 'px'); new ResizeObserver(setDock).observe(dk); setDock();
-  wire_galaxy(); wire_picker(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys();
+  wire_galaxy(); wire_helix(); wire_picker(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys();
   syncPlayUI();
 }

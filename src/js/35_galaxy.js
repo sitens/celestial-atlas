@@ -1,7 +1,7 @@
 // ===================== 35_galaxy.js — Milky Way view: the Sun's helical path around the Galactic Centre =====================
 const galScene = new THREE.Scene();
 const galCam = new THREE.PerspectiveCamera(45, 1, 1e-4, 1e6);
-const GV = { ready: false, gt: 0, playing: false, speed: 20, drift: false, vex: 25, dscale: 0.2, follow: false, yaw: 0.6, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, tween: null, labels: {}, pathKey: '', info: {}, sun: null };
+const GV = { ready: false, gt: 0, playing: false, speed: 20, drift: false, vex: 25, dscale: 0.2, art: true, omega: 28.2, cross: null, crossOmega: null, follow: false, yaw: 0.6, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, tween: null, labels: {}, pathKey: '', info: {}, sun: null };
 const GT_MAX = 650, BEADS = 90;
 const LY_PER_KPC = 3261.56;
 let galDots, galPoints, galPath, galBeads, galSun, galSunRing, galDrop, galGhost = [], galMarkers = [], galDrift = null;
@@ -49,7 +49,7 @@ function buildGalaxy() {
   galPoints.frustumCulled = false; galScene.add(galPoints);
   // diffuse disc glow + bulge glow
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshBasicMaterial({ map: radialTex([[0, 'rgba(255,230,190,0.55)'], [0.1, 'rgba(255,214,160,0.32)'], [0.35, 'rgba(150,185,255,0.16)'], [0.7, 'rgba(110,150,255,0.05)'], [1, 'rgba(90,130,255,0)']], 512), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.9 }));
-  glow.rotation.x = -Math.PI / 2; glow.renderOrder = -2; galScene.add(glow);
+  glow.rotation.x = -Math.PI / 2; glow.renderOrder = -2; galScene.add(glow); GV.glow = glow;
   const gc = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd9a0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 })); gc.scale.set(3.2, 3.2, 1); gc.renderOrder = 5; galScene.add(gc);
   const gc2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 })); gc2.scale.set(0.7, 0.7, 1); gc2.renderOrder = 5; galScene.add(gc2);
   // scale rings
@@ -78,6 +78,7 @@ function buildGalaxy() {
   galMarkers = [[-66, 'K–Pg · dinosaurs end (66 Myr ago)'], [-252, 'Permian–Triassic extinction (252 Myr ago)'], [-541, 'Cambrian explosion (541 Myr ago)'], [66, '+66 Myr']].map(([t, txt]) => ({ t, txt }));
   galDrift = galaxyDrift();
   GV.ready = true;
+  buildFar();
 }
 function galPathBuild() {
   const key = GV.vex + '|' + GV.drift + '|' + GV.dscale; if (key === GV.pathKey) return; GV.pathKey = key;
@@ -115,7 +116,8 @@ function enterGalaxy(opts = {}) {
 function updateGalaxy(dt, now) {
   if (!GV.ready) buildGalaxy();
   if (GV.playing) { GV.gt += GV.speed * dt; if (GV.gt > GT_MAX) { GV.gt = GT_MAX; GV.playing = false; syncGalUI(); } if (GV.gt < -GT_MAX) { GV.gt = -GT_MAX; GV.playing = false; syncGalUI(); } }
-  galPathBuild();
+  galPathBuild(); GV.glow.material.opacity = GV.art ? 0.22 : 0.9;
+  FAR.rot.rotation.y = -GV.omega * GM.kms * GV.gt; FAR.rot.updateMatrixWorld(true);
   const s = sunAt(GV.gt), D = GVD(), sp = new THREE.Vector3(s.x, s.y * GV.vex, s.z);
   galPath.position.set(GV.drift ? -D[0] * GV.gt : 0, GV.drift ? -D[1] * GV.gt : 0, GV.drift ? -D[2] * GV.gt : 0); galDots.position.copy(galPath.position);
   // beads: the recent past and near future of the path
@@ -139,26 +141,28 @@ function updateGalaxy(dt, now) {
     GV.yaw = L(tw.from.yaw, tw.to.yaw); GV.pitch = L(tw.from.pitch, tw.to.pitch); GV.dist = tw.from.dist * Math.pow(tw.to.dist / tw.from.dist, e);
     GV.tx = L(tw.from.tx, tw.to.tx); GV.ty = L(tw.from.ty, tw.to.ty); GV.tz = L(tw.from.tz, tw.to.tz); if (k >= 1) GV.tween = null;
   } else if (GV.follow) { GV.tx += (sp.x - GV.tx) * 0.2; GV.ty += (sp.y - GV.ty) * 0.2; GV.tz += (sp.z - GV.tz) * 0.2; }
-  GV.dist = Math.max(0.0004, Math.min(900, GV.dist));
+  GV.dist = Math.max(0.0004, Math.min(6e5, GV.dist));
   const cp = Math.cos(GV.pitch);
   galCam.position.set(GV.tx + Math.sin(GV.yaw) * cp * GV.dist, GV.ty + Math.sin(GV.pitch) * GV.dist, GV.tz + Math.cos(GV.yaw) * cp * GV.dist);
-  galCam.up.set(0, 1, 0); galCam.lookAt(GV.tx, GV.ty, GV.tz); galCam.near = Math.max(GV.dist * 0.001, 1e-5); galCam.far = 1e5; galCam.updateProjectionMatrix(); galCam.updateMatrixWorld(true);
+  galCam.up.set(0, 1, 0); galCam.lookAt(GV.tx, GV.ty, GV.tz); galCam.near = Math.max(GV.dist * 0.001, 1e-5); galCam.far = 1e9; galCam.updateProjectionMatrix(); galCam.updateMatrixWorld(true);
   const dc = galCam.position.distanceTo(sp), sc = Math.max(0.00025, dc * 0.022);
   galSun.scale.set(sc * 2.2, sc * 2.2, 1); galSunRing.scale.set(sc * 1.6, sc * 1.6, 1);
-  galPoints.material.uniforms.uAlpha.value = Math.max(0.12, Math.min(0.55, 0.22 * Math.pow(GV.dist / 25, 0.42)));
+  galPoints.material.uniforms.uAlpha.value = Math.max(0.12, Math.min(0.55, 0.22 * Math.pow(GV.dist / 25, 0.42))) * (GV.art ? 0.5 : 1);
+  const pathVis = GV.dist < 2500; galPath.visible = galDots.visible = galBeads.visible = galSun.visible = galSunRing.visible = galDrop.visible = pathVis;
   galPoints.material.uniforms.uK.value = Math.max(1.4, Math.min(2.4, 2.4 - GV.dist / 80));
   GV.sun = s; GV.info = { gt: GV.gt, R: s.R, y: s.y, speed: s.speed, vR: s.vR, phi: s.phi, dist: GV.dist };
   // labels
   const lab = (key, text, cls, pos, ox, oy, show) => placeGalLabel(galLabel(key, text, cls), pos, ox, oy, show);
   const on = S.tg.labels && S.view === 'galaxy';
-  lab('gc', 'Sagittarius A* · Galactic Centre', 'gc', new THREE.Vector3(0, 0, 0), 12, -6, on);
-  lab('sun', 'Sun · Orion Spur', 'sun', sp, 14, -8, on);
+  lab('gc', 'Sagittarius A* · Galactic Centre', 'gc', new THREE.Vector3(0, 0, 0), 12, -6, on && GV.dist < 110);
+  lab('sun', 'Sun · Orion Spur', 'sun', sp, 14, -8, on && GV.dist < 110);
   const armLab = [[0, 12.4, 'Perseus Arm'], [1, 10.4, 'Sagittarius–Carina Arm'], [2, 9.4, 'Scutum–Centaurus Arm'], [3, 11.6, 'Norma–Outer Arm']];
-  for (const [j, R, name] of armLab) { const p = armXZ(ARMS[j], R); lab('arm' + j, name, 'arm', new THREE.Vector3(p[0], 0, p[1]), 0, 0, on && GV.dist > 8); }
-  const bx = Math.cos(GM.barAngle) * 5.0, bz = Math.sin(GM.barAngle) * 5.0; lab('bar', 'Central bar', 'arm', new THREE.Vector3(bx, 0.3, bz), 4, -4, on && GV.dist > 6);
-  [5, 10, 15].forEach(R => lab('ring' + R, `${R} kpc · ${(R * LY_PER_KPC / 1000).toFixed(0)}k ly`, 'ring', new THREE.Vector3(-R * 0.7071, 0, -R * 0.7071), 0, 0, on && GV.dist > 10));
+  for (const [j, R, name] of armLab) { const p = armXZ(ARMS[j], R); lab('arm' + j, name, 'arm', FAR.rot.localToWorld(new THREE.Vector3(p[0], 0, p[1])), 0, 0, on && GV.dist > 8 && GV.dist < 110); }
+  const bx = Math.cos(GM.barAngle) * 5.0, bz = Math.sin(GM.barAngle) * 5.0; lab('bar', 'Central bar', 'arm', FAR.rot.localToWorld(new THREE.Vector3(bx, 0.3, bz)), 4, -4, on && GV.dist > 6 && GV.dist < 110);
+  [5, 10, 15].forEach(R => lab('ring' + R, `${R} kpc · ${(R * LY_PER_KPC / 1000).toFixed(0)}k ly`, 'ring', new THREE.Vector3(-R * 0.7071, 0, -R * 0.7071), 0, 0, on && GV.dist > 10 && GV.dist < 110));
   for (const m of galMarkers) { const show = on && Math.abs(m.t) <= 560 && m.t < 0; lab('mk' + m.t, m.txt, 'mk', galPoint(m.t), 8, -4, show && GV.dist < 120 && !GV.drift); }
   if (GV.drift) lab('drift', 'Galaxy drifts toward the Great Attractor (l 266°, b 29°) →', 'drift', new THREE.Vector3(D[0] * 140, D[1] * 140, D[2] * 140), 0, 0, on); else lab('drift', '', 'drift', new THREE.Vector3(), 0, 0, false);
+  updateFar(GV.dist, on);
 }
 const _gv = new THREE.Vector3(), _gv2 = new THREE.Vector3();
 function placeGalLabel(el, pos, ox, oy, show) {

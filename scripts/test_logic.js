@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 global.Astronomy = require('astronomy-engine');
 const src = ['src/assets.js', 'src/eclipses.js', 'src/js/00_util.js', 'src/js/10_astro.js', 'src/js/15_galaxy_math.js'].map(f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8')).join('\n');
 const ctx = vm.createContext({ Astronomy: global.Astronomy, console, Date, Math, Intl, Set, Object, Array, JSON, Number, String, isFinite, parseInt });
-vm.runInContext(src + '\n;this.__api={sunOrbit,sunAt,galaxyDrift,buildMilkyWay,ARMS,armXZ,spurXZ,GM,ECLIPSE_TABLE,STARS,runTimeSelfTests,computeState,solarEclipseNow,lunarEclipseNow,mkObs,timeOf,utcFromParts,localToUTC,partsInZone,eclipseList,findEvent,stepGlobal,localSolar,upTonight,skyBody,earthAxes,geoDir,BODY,v3,SATS,fmtUTC,fmtLocal,findMeteor,moonAxes,discCoverFrac,globalSolarAfter,lunarAfter,localLunar,AU_KM,J2000_MS,nightWindow};', ctx);
+vm.runInContext(src + '\n;this.__api={armCrossings,nearestArm,LOCAL_GROUP,LANIAKEA,lbToFrame,MASS_EXT,sunOrbit,sunAt,galaxyDrift,buildMilkyWay,ARMS,armXZ,spurXZ,GM,ECLIPSE_TABLE,STARS,runTimeSelfTests,computeState,solarEclipseNow,lunarEclipseNow,mkObs,timeOf,utcFromParts,localToUTC,partsInZone,eclipseList,findEvent,stepGlobal,localSolar,upTonight,skyBody,earthAxes,geoDir,BODY,v3,SATS,fmtUTC,fmtLocal,findMeteor,moonAxes,discCoverFrac,globalSolarAfter,lunarAfter,localLunar,AU_KM,J2000_MS,nightWindow};', ctx);
 const X = ctx.__api;
 let fail = 0;
 const ok = (n, c, i = '') => { console.log((c ? 'PASS ' : 'FAIL ') + n + (i ? '  — ' + i : '')); if (!c) fail++; };
@@ -91,5 +91,16 @@ const sunMad = X.v3.dot(X.geoDir(ax, 0, 90), sunDir); console.log('  lon 90E·su
   ok('galaxy: procedural stars built (count, disc radius < 22 kpc)', mw.n === 20000 && rr < 22, `${mw.n} stars, rmax ${rr.toFixed(1)}`);
   const p = X.armXZ(X.ARMS[0], 10.1); ok('galaxy: Perseus arm crosses the Sun line at ~10 kpc', Math.abs(p[0] - 10.1) < 0.01 && Math.abs(p[1]) < 0.01);
   const sg = X.armXZ(X.ARMS[1], X.ARMS[1].R0); ok('galaxy: Sagittarius-Carina arm ~ 7 kpc on the Sun line', Math.abs(sg[0] - 7.0) < 0.3, sg[0].toFixed(2));
+}
+// ---- arm crossings / Local Group / Laniakea ----
+{
+  for (const om of [20, 28.2]) { const c = X.armCrossings(om); ok(`arms: Omega_p ${om} gives 4-9 crossings in +-650 Myr, ordered`, c.length >= 4 && c.length <= 9 && c.every((s, i) => i === 0 || s.t0 >= c[i - 1].t0), c.length + ' crossings'); }
+  const n = X.nearestArm(0); ok('arms: the Sun is between arms today (nearest 1-3 kpc)', !n.inside && Math.abs(n.dist) > 0.8 && Math.abs(n.dist) < 3.2, n.dist.toFixed(2) + ' kpc');
+  const sun0 = [8.18, 0.0208, 0], gc = (o, k = 1) => { const v = X.lbToFrame(o.l, o.b, o.d * k); return Math.hypot(v[0] + sun0[0], v[1] + sun0[1], v[2] + sun0[2]); };
+  const L = n => X.LOCAL_GROUP.find(o => o.n.startsWith(n));
+  ok('local group: LMC ~50 kpc from the Galactic Centre', Math.abs(gc(L('Large')) - 50) < 3, gc(L('Large')).toFixed(1));
+  ok('local group: Andromeda ~780 kpc from the Galactic Centre', Math.abs(gc(L('Andromeda')) - 780) < 25, gc(L('Andromeda')).toFixed(0));
+  const ga = X.LANIAKEA.find(o => o.ga); ok('laniakea: Great Attractor ~69 Mpc away', Math.abs(Math.hypot(...X.lbToFrame(ga.l, ga.b, ga.d)) - 69) < 0.01);
+  ok('mass extinction table has the Big Five', X.MASS_EXT.length === 5 && X.MASS_EXT.some(m => m[0] === 66 && m[0] < m[0] + 1));
 }
 console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); process.exit(fail ? 1 : 0);

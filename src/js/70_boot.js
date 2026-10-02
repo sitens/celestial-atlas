@@ -17,9 +17,10 @@
     if (h && (h.view === 'earthmoon' || h.view === 'planet')) { S.view = h.view; markView(); introFly = false; }
     if (h && h.view === 'galaxy') { if (h.gt != null) GV.gt = h.gt; GV.drift = !!h.helix; enterGalaxy({ intro: false }); GV.dist = GV.drift ? 150 : 38; GV.pitch = GV.drift ? 0.4 : 0.95; if (GV.drift) GV.yaw = helixYaw(); syncGalUI(); introFly = false; }
     if (h && h.view === 'sky') { SKY.aimed = true; if (h.az != null) { SKY.az = h.az; SKY.alt = h.alt; SKY.fov = h.fov; syncFov(); } else SKY.needAim = true; S.view = 'sky'; markView(); introFly = false; }
+    if (h && h.hx) { setHelix(true, { noFly: !!h.cam, noPlay: true }); introFly = false; }
     startRender();
     window.__booted = true;
-    window.__app = { S, CAM, SKY, OB, TL, U, ST: () => ST, setTime, setView, setLocation, setScale, selectBody, focusBody, flyTo, goLive, setSpeed, togglePlay, stepTime, jumpEvent, applyPreset, runSelfTestsUI, computeState, A, v3, THREE, renderer, scene, camera, skyCam, aimSky, applyWall, syncPicker, ORB, findEvent, get skyDome() { return skyDome; }, azAltToDir, dirToAzAlt, buildSky, skyScene, POST, CLOUD, ECL_LIST, STARS, starDirAt, rVis, flyToLocation, GV, sunAt, sunOrbit, galaxyDrift, enterGalaxy, buildMilkyWay, runTour, tourCancel };
+    window.__app = { S, CAM, SKY, OB, TL, U, ST: () => ST, setTime, setView, setLocation, setScale, selectBody, focusBody, flyTo, goLive, setSpeed, togglePlay, stepTime, jumpEvent, applyPreset, runSelfTestsUI, computeState, A, v3, THREE, renderer, scene, camera, skyCam, aimSky, applyWall, syncPicker, ORB, findEvent, get skyDome() { return skyDome; }, azAltToDir, dirToAzAlt, buildSky, skyScene, POST, CLOUD, ECL_LIST, STARS, starDirAt, rVis, flyToLocation, GV, HX, FAR, setHelix, hxBuild, SPREAD, spreadFactor, moonSystem, sunAt, sunOrbit, galaxyDrift, enterGalaxy, buildMilkyWay, runTour, tourCancel };
     setTimeout(() => { const l = $('loading'); l.style.opacity = 0; setTimeout(() => l.remove(), 900); }, 500);
     if (introFly) setTimeout(() => { if (S.view === 'system' && !ptrs.size) flyToLocation(); }, 1700);
   } catch (e) {

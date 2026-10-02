@@ -263,11 +263,38 @@ function helioToWorld(p) { // km vec -> world (double)
   const d = v3.len(p); if (d === 0) return [0, 0, 0];
   const k = EXPL.dist(d / AU_KM) / d; return [p[0] * k, p[1] * k, p[2] * k];
 }
-function offsetToWorld(parentId, r) { // km offset from parent -> world offset
+// Moon systems in 'Explorable' mode: the full-size layout of a moon system can be wider than the gap between neighbouring planet
+// orbits (the Moon's orbit used to cross Venus's and Mars's). So the system is drawn COMPACT (fits inside 40% of that gap) from afar and
+// spreads out to full size as the camera approaches the planet. SPREAD[parent] = 0..1 blend, recomputed each frame.
+const PLANET_AU = { Mercury: 0.387, Venus: 0.723, Earth: 1.0, Mars: 1.524, Jupiter: 5.203, Saturn: 9.537, Uranus: 19.19, Neptune: 30.07, Pluto: 39.48 };
+const SPREAD = {}, _spCache = {};
+function moonSystem(parentId) { // full-size outer radius + compact cap (world units), explorable mode
+  if (_spCache[parentId]) return _spCache[parentId];
+  const A = { Moon: 405500, Phobos: 9380, Deimos: 23460, Io: 421800, Europa: 671100, Ganymede: 1070400, Callisto: 1882700 };
+  let aMax = 0; for (const m of MOONS_OF[parentId] || []) aMax = Math.max(aMax, A[m] || (SATS[m] ? SATS[m][1] * 1.03 : 0));
+  const full = EXPL.earthR * Math.pow(BODY[parentId].R / 6371, EXPL.expR) * (1.5 + 0.45 * Math.pow(aMax / BODY[parentId].R, 0.7));
+  const ds = Object.keys(PLANET_AU).filter(k => k !== parentId).map(k => Math.abs(EXPL.dist(PLANET_AU[k]) - EXPL.dist(PLANET_AU[parentId])));
+  const cap = 0.4 * Math.min(...ds);
+  return (_spCache[parentId] = { full, cap, compact: Math.min(1, cap / full) });
+}
+function spreadFactor(parentId) {
+  if (S.trueScale) return 1;
+  const ms = moonSystem(parentId), s = SPREAD[parentId] == null ? 0 : SPREAD[parentId];
+  return ms.compact + (1 - ms.compact) * s;
+}
+function offsetToWorld(parentId, r, noSpread) { // km offset from parent -> world offset
   if (S.trueScale) return [r[0] * TRUE_UNIT, r[1] * TRUE_UNIT, r[2] * TRUE_UNIT];
   const d = v3.len(r); if (d === 0) return [0, 0, 0];
-  const ratio = d / BODY[parentId].R, vd = rVis(parentId) * (1.5 + 0.45 * Math.pow(ratio, 0.7));
+  const ratio = d / BODY[parentId].R, vd = rVis(parentId) * (1.5 + 0.45 * Math.pow(ratio, 0.7)) * (noSpread ? 1 : spreadFactor(parentId));
   const k = vd / d; return [r[0] * k, r[1] * k, r[2] * k];
+}
+function updateSpread(st, origin) {
+  const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (const pid in MOONS_OF) {
+    const pw = helioToWorld(st.pos[pid]), cx = origin[0] + camera.position.x, cy = origin[1] + camera.position.y, cz = origin[2] + camera.position.z;
+    const d = Math.hypot(pw[0] - cx, pw[1] - cy, pw[2] - cz), full = moonSystem(pid).full;
+    SPREAD[pid] = 1 - sm(full * 1.7, full * 5.5, d);
+  }
 }
 function worldPos(id, st) {
   const d = BODY[id];
@@ -464,7 +491,7 @@ function ensureOrbit(id, tms) {
   const pts = orbitSamples(id, tms);
   const isMoon = !!BODY[id].parent;
   const arr = new Float32Array(pts.length * 3);
-  pts.forEach((p, i) => { const w = isMoon ? offsetToWorld(BODY[id].parent, p) : helioToWorld(p); arr[i * 3] = w[0]; arr[i * 3 + 1] = w[1]; arr[i * 3 + 2] = w[2]; });
+  pts.forEach((p, i) => { const w = isMoon ? offsetToWorld(BODY[id].parent, p, true) : helioToWorld(p); arr[i * 3] = w[0]; arr[i * 3 + 1] = w[1]; arr[i * 3 + 2] = w[2]; });
   if (!o) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
     const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: new THREE.Color(BODY[id].color), transparent: true, opacity: isMoon ? 0.4 : 0.38, depthWrite: false }));
@@ -560,6 +587,7 @@ function sphericalAxesWithSpin(ax, spinAng) { // rotate x,y about z by spinAng (
 }
 function updateScene(st, origin) {
   camOrigin = origin;
+  updateSpread(st, origin);
   const wp = {};
   for (const id in OB) wp[id] = worldPos(id, st);
   for (const id in OB) {
@@ -613,7 +641,7 @@ function updateScene(st, origin) {
   for (const id of PLANETS.filter(p => p !== 'Earth' || true)) { const o = ensureOrbit(id, st.tms); o.line.visible = S.tg.orbits; const w = [-origin[0], -origin[1], -origin[2]]; o.line.position.set(w[0], w[1], w[2]); }
   for (const id of Object.keys(BODY)) if (BODY[id].parent) {
     const parW = wp[BODY[id].parent], near = camDistTo(OB[BODY[id].parent]) < OB[BODY[id].parent].vr * 90 || S.trueScale;
-    if (S.tg.orbits && S.tg.moons && near) { const o = ensureOrbit(id, st.tms); o.line.visible = true; o.line.position.set(parW[0] - origin[0], parW[1] - origin[1], parW[2] - origin[2]); } else if (ORB[id]) ORB[id].line.visible = false;
+    if (S.tg.orbits && S.tg.moons && near) { const o = ensureOrbit(id, st.tms); o.line.visible = true; o.line.scale.setScalar(spreadFactor(BODY[id].parent)); o.line.position.set(parW[0] - origin[0], parW[1] - origin[1], parW[2] - origin[2]); } else if (ORB[id]) ORB[id].line.visible = false;
   }
   updateTrails(st.tms);
   for (const id in TRAIL) TRAIL[id].position.set(-origin[0], -origin[1], -origin[2]);
@@ -623,6 +651,7 @@ function updateScene(st, origin) {
   constLines.visible = S.tg.constellations;
   updateCones(st, origin);
   updateMarker(st, wp, origin);
+  hxUpdate(st, origin);
 }
 const axes_z = ax => ax.z;
 function camDistTo(o) { return camera.position.distanceTo(o.pos); }

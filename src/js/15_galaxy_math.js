@@ -106,3 +106,66 @@ function buildMilkyWay(total = 110000, seed = 7) {
   for (let i = 0; i < nHalo; i++) { const r = 2 + 18 * Math.pow(rnd(), 1.3), th = Math.acos(2 * rnd() - 1), ph = rnd() * 6.2832; put(r * Math.sin(th) * Math.cos(ph), r * Math.cos(th), r * Math.sin(th) * Math.sin(ph), 0.9, 0.82, 0.62, 0.9, 4); }
   return { n: k, pos, col, size, kind };
 }
+
+// ---- spiral-arm crossings: the arm pattern rotates rigidly at Omega_p, the Sun at its own (faster/slower) angular speed ----
+GM.armHalf = 0.5;      // kpc, half-width of an arm (Reid+2019: ~0.4-0.6)
+GM.omegaP = 28.2;      // km/s/kpc, pattern speed (Dias+2019 28.2; Dias&Lepine 2005 ~20; literature 20-30)
+function armAngle(arm, R, tMyr, omegaKmSKpc) { return armBeta(arm, R) + omegaKmSKpc * GM.kms * tMyr; }
+function wrapPiG(a) { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; }
+// signed distance (kpc) from the Sun to the centre line of each arm at time t (negative = arm lies behind the Sun's direction of motion)
+function sunArmDistances(tMyr, omega = GM.omegaP) {
+  const s = sunAt(tMyr), out = [];
+  for (const arm of ARMS) { const d = wrapPiG(s.phi - armAngle(arm, s.R, tMyr, omega)); out.push(d * s.R * Math.sin(GM.armPitch)); }
+  return { sun: s, d: out };
+}
+function nearestArm(tMyr, omega = GM.omegaP) {
+  const r = sunArmDistances(tMyr, omega); let k = 0; for (let i = 1; i < r.d.length; i++) if (Math.abs(r.d[i]) < Math.abs(r.d[k])) k = i;
+  return { arm: k, dist: r.d[k], inside: Math.abs(r.d[k]) < GM.armHalf, R: r.sun.R };
+}
+function armCrossings(omega = GM.omegaP, tMin = -650, tMax = 650, dt = 0.5) {
+  const segs = []; let cur = null;
+  for (let t = tMin; t <= tMax + 1e-9; t += dt) {
+    const n = nearestArm(t, omega);
+    if (n.inside) { if (cur && cur.arm === n.arm) { cur.t1 = t; cur.min = Math.min(cur.min, Math.abs(n.dist)); } else { if (cur) segs.push(cur); cur = { arm: n.arm, t0: t, t1: t, min: Math.abs(n.dist) }; } }
+    else if (cur) { segs.push(cur); cur = null; }
+  }
+  if (cur) segs.push(cur);
+  return segs.filter(s => s.t1 - s.t0 >= 1);
+}
+// "Big Five" mass extinctions (Myr before present) — shown for context; any link to arm passages is a hypothesis, not established
+const MASS_EXT = [[445, 'Ordovician–Silurian'], [372, 'Late Devonian'], [252, 'Permian–Triassic'], [201, 'Triassic–Jurassic'], [66, 'Cretaceous–Paleogene']];
+
+// ---- Local Group & beyond (galactic l, b in degrees; distance in kpc from the Sun) — positions are catalogue values (McConnachie 2012, NED) ----
+const LOCAL_GROUP = [
+  { n: 'Large Magellanic Cloud', l: 280.47, b: -32.89, d: 49.6, size: 4.3, type: 'irr', tier: 1 },
+  { n: 'Small Magellanic Cloud', l: 302.8, b: -44.3, d: 62.1, size: 2.5, type: 'irr', tier: 1 },
+  { n: 'Sagittarius dwarf', l: 5.6, b: -14.2, d: 26, size: 3, type: 'dsph', tier: 1 },
+  { n: 'Draco', l: 86.37, b: 34.72, d: 76, size: 0.5, type: 'dsph', tier: 1 },
+  { n: 'Ursa Minor', l: 104.97, b: 44.8, d: 76, size: 0.6, type: 'dsph', tier: 1 },
+  { n: 'Sculptor', l: 287.5, b: -83.16, d: 86, size: 0.6, type: 'dsph', tier: 1 },
+  { n: 'Carina', l: 260.1, b: -22.2, d: 105, size: 0.5, type: 'dsph', tier: 1 },
+  { n: 'Fornax', l: 237.1, b: -65.65, d: 147, size: 1.6, type: 'dsph', tier: 1 },
+  { n: 'Leo I', l: 226.0, b: 49.1, d: 254, size: 0.6, type: 'dsph', tier: 1 },
+  { n: 'Andromeda (M31)', l: 121.17, b: -21.57, d: 765, size: 46, type: 'spiral', tier: 2, vr: -110 },
+  { n: 'Triangulum (M33)', l: 133.61, b: -31.33, d: 840, size: 18, type: 'spiral', tier: 2 },
+  { n: 'M32', l: 121.15, b: -22.0, d: 760, size: 2.2, type: 'ell', tier: 2 },
+  { n: 'NGC 205', l: 120.72, b: -21.14, d: 820, size: 5, type: 'ell', tier: 2 },
+  { n: 'IC 10', l: 118.97, b: -3.34, d: 790, size: 2.5, type: 'irr', tier: 2 },
+  { n: 'NGC 6822 (Barnard’s)', l: 25.3, b: -18.4, d: 500, size: 2.5, type: 'irr', tier: 2 },
+  { n: 'IC 1613', l: 129.74, b: -60.58, d: 730, size: 3, type: 'irr', tier: 2 },
+  { n: 'WLM', l: 75.85, b: -73.63, d: 930, size: 2.5, type: 'irr', tier: 2 },
+];
+// Mpc, galactic coords from the Sun; the Local Group is at the origin of this list
+const LANIAKEA = [
+  { n: 'Virgo Cluster', l: 283.78, b: 74.46, d: 16.5, r: 2.4, w: 1.0 },
+  { n: 'Fornax Cluster', l: 236.7, b: -53.6, d: 19.3, r: 1.2, w: 0.5 },
+  { n: 'Hydra Cluster', l: 269.5, b: 26.5, d: 51, r: 2.0, w: 0.6 },
+  { n: 'Centaurus Cluster', l: 302.4, b: 21.6, d: 52, r: 2.2, w: 0.7 },
+  { n: 'Great Attractor (Norma Cluster)', l: 325.3, b: -7.2, d: 69, r: 4.5, w: 1.4, ga: true },
+  { n: 'Pavo–Indus', l: 331, b: -35, d: 70, r: 3, w: 0.7 },
+  { n: 'Perseus–Pisces', l: 150.6, b: -13.3, d: 73, r: 3, w: 0.8, outside: true },
+  { n: 'Coma Cluster', l: 58.1, b: 88.0, d: 99, r: 3, w: 0.8, outside: true },
+  { n: 'Shapley Concentration', l: 311.9, b: 30.6, d: 200, r: 8, w: 1.2, outside: true },
+];
+const LANIAKEA_INFO = { diameterMpc: 160, massSuns: 1e17, galaxies: 100000, lgVelKms: 620, lgL: 271.9, lgB: 29.6 };
+function lbToXYZ(l, b, d) { return lbToFrame(l, b, d); }  // returns frame coords (kpc or Mpc) RELATIVE to the Sun

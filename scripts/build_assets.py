@@ -34,6 +34,7 @@ tex["earthSpec"] = enc(load(f"{RAW}/earth_specular_2048.jpg", (1024, 512), "L"),
 tex["earthLights"] = enc(load(f"{RAW}/earth_lights_2048.png", (1536, 768)), q=78)
 tex["earthClouds"] = enc(Image.open(f"{RAW}/earth_clouds_1024.png").convert("RGBA").split()[3], q=75)  # alpha -> luminance
 tex["earthNormal"] = enc(load(f"{RAW}/earth_normal_2048.jpg", (1024, 512)), q=82)
+tex["mwArt"] = enc(load(f"{RAW}/milkyway_2005.jpg", (1100, 1100)), q=80)  # NASA/JPL-Caltech/R. Hurt (SSC) artist's concept, public domain
 tex["moon"] = enc(load(f"{RAW}/moon_1024.jpg", (1024, 512)), q=80)
 for k, f, sz in [("sun", "2k_sun", (1024, 512)), ("mercury", "2k_mercury", (1024, 512)),
                  ("venus", "2k_venus_surface", (1024, 512)), ("mars", "2k_mars", (1024, 512)),
