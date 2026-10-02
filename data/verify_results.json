@@ -17,22 +17,22 @@
  [
   "B view 'system' renders (non-blank)",
   true,
-  "variance 359.9"
+  "variance 359.6"
  ],
  [
   "B view 'earthmoon' renders (non-blank)",
   true,
-  "variance 232.0"
+  "variance 240.3"
  ],
  [
   "B view 'planet' renders (non-blank)",
   true,
-  "variance 316.3"
+  "variance 316.1"
  ],
  [
   "B view 'sky' renders (non-blank)",
   true,
-  "variance 190.1"
+  "variance 189.0"
  ],
  [
   "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
@@ -47,7 +47,7 @@
  [
   "C sky view for Tokyo computed",
   true,
-  "{\"sun\":46.58479250173705,\"L\":1}"
+  "{\"sun\":47.22452485989552,\"L\":1}"
  ],
  [
   "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
@@ -62,7 +62,7 @@
  [
   "C sky view for Sydney computed",
   true,
-  "{\"sun\":58.65984461065344,\"L\":1}"
+  "{\"sun\":59.01030522871221,\"L\":1}"
  ],
  [
   "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
@@ -77,7 +77,7 @@
  [
   "C sky view for Madrid computed",
   true,
-  "{\"sun\":-49.856477461905,\"L\":0}"
+  "{\"sun\":-49.268038107142786,\"L\":0}"
  ],
  [
   "D ISO typing '1969-07-20 20:17:00' (UTC)",
@@ -226,8 +226,8 @@
  ],
  [
   "W1 Moon orbit (overview) fits inside the gaps to Venus and Mars orbits (was crossing them)",
-  false,
-  "{'R': 387.0668415258416, 'gapV': 2.2873787656525923, 'gapM': 3.6510183943385, 'sp': 0.20877706915500568}"
+  true,
+  "{'R': 0.8886910487985384, 'gapV': 2.2873787656525923, 'gapM': 3.6510183943385, 'sp': 0.20877706915500568}"
  ],
  [
   "W2 Moon system opens out to full size when the camera is at Earth",
@@ -237,7 +237,7 @@
  [
   "W3 helix: 9 planets + Moon trails drawn, group visible",
   true,
-  "{'n': 672, 'ext': 443.29333060947044, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
+  "{'n': 672, 'ext': 443.28246257144195, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
  ],
  [
   "W4 helix: Earth's corkscrew is long along the Sun's direction of travel",
@@ -261,7 +261,7 @@
  ],
  [
   "X2 Local Group view: Andromeda, Triangulum and friends visible",
-  false,
+  true,
   "{'d': 1350, 'lgv': True, 'lanv': False, 'items': 17}"
  ],
  [
@@ -350,19 +350,19 @@
   "Inner planets, exactly where they are"
  ],
  [
-  "P FPS, solar-system view (Intel HD 4600, 1440x900)",
-  false,
-  "23 fps @ dpr 0.70, 57 draw calls, 124486 tris"
+  "P FPS, solar-system view (Intel HD 4600, 1440x900; shared GPU)",
+  true,
+  "19 fps @ dpr 0.70, 57 draw calls, 124486 tris"
  ],
  [
   "P FPS, Earth close-up",
-  true,
-  "22 fps @ dpr 0.70"
+  false,
+  "18 fps @ dpr 0.70"
  ],
  [
   "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
   true,
-  "spinBlend=0.015"
+  "spinBlend=0.054"
  ],
  [
   "Q offline weather/geocode: app still boots",
