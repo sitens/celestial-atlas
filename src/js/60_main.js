@@ -117,7 +117,13 @@ function focusBody(id, opts = {}) {
   if (S.view === 'sky') setView('planet', { noFly: true });
   else { S.view = 'planet'; markView(); }
 }
-function markView() { document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view)); document.body.classList.toggle('galaxy', S.view === 'galaxy'); updateSkyUI(); }
+function markView() {
+  document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  document.body.classList.toggle('galaxy', S.view === 'galaxy'); document.body.dataset.view = S.view;
+  if (S.cmp && S.view !== 'system') setCompare(false);
+  if (S.view === 'galaxy' && S.playing) S.playing = false;   // one transport: in the Galaxy it runs galactic time, so pause the clock
+  updateSkyUI(); if (typeof syncPlayUI === 'function' && $('spdSel')) { syncPlayUI(); TL.lastKey = null; }
+}
 function updateSkyUI() { if ($('hxBar')) $('hxBar').style.display = HX.on && S.view !== 'sky' && S.view !== 'galaxy' ? 'flex' : 'none'; const gal = S.view === 'galaxy'; $('galBar').style.display = gal ? 'flex' : 'none'; $('galInfo').style.display = gal ? 'block' : 'none'; const sky = S.view === 'sky'; $('skyBar').style.display = sky ? 'flex' : 'none'; $('skyInfo').style.display = sky ? 'block' : 'none'; }
 function setScale(tr, keepCam) {
   if (S.trueScale === tr) return;
@@ -174,13 +180,20 @@ function setSpeed(v) {
   syncPlayUI(); uiTimeChanged();
 }
 function togglePlay() {
+  if (S.view === 'galaxy') { GV.playing = !GV.playing; syncPlayUI(); return; }
   if (S.live) { S.live = false; S.playing = false; }
   else S.playing = !S.playing;
   syncPlayUI(); uiTimeChanged();
 }
+// ONE transport: in the Galaxy view the same buttons run galactic time (Myr per second)
+const GAL_SPEEDS = [['1 Myr / s', 1], ['5 Myr / s', 5], ['20 Myr / s', 20], ['60 Myr / s', 60], ['200 Myr / s', 200]];
+let spdMode = '';
 function syncPlayUI() {
-  $('btnPlay').textContent = S.playing ? '⏸' : '▶'; $('btnPlay').classList.toggle('on', S.playing);
-  $('btnRev').classList.toggle('on', S.dir < 0); $('spdSel').value = String(S.speed);
+  const gal = S.view === 'galaxy', playing = gal ? GV.playing : S.playing, mode = gal ? 'g' : 't';
+  if (mode !== spdMode) { spdMode = mode; $('spdSel').innerHTML = (gal ? GAL_SPEEDS : SPEEDS).map(s => `<option value="${s[1]}">${s[0]}</option>`).join(''); }
+  $('btnPlay').textContent = playing ? '⏸' : '▶'; $('btnPlay').classList.toggle('on', playing);
+  $('btnRev').classList.toggle('on', gal ? GV.speed < 0 : S.dir < 0); $('spdSel').value = String(gal ? Math.abs(GV.speed) : S.speed);
+  $('btnNow').firstChild && ($('btnNow').textContent = gal ? '⟲ Today' : '⟲ Now');
 }
 
 // ---------- cinematic tour ----------
@@ -230,6 +243,16 @@ function resize() {
   postResize();
 }
 addEventListener('resize', resize);
+// split-screen explainer: same camera, same instant; left without the helix trails (the textbook flat picture), right with them
+function renderCompare() {
+  const W = innerWidth, H = innerHeight, hw = Math.floor(W / 2);
+  camera.aspect = hw / H; camera.updateProjectionMatrix();
+  renderer.setRenderTarget(null); renderer.setScissorTest(true);
+  HX.group.visible = false; renderer.setViewport(0, 0, hw, H); renderer.setScissor(0, 0, hw, H); renderer.render(scene, camera);
+  HX.group.visible = true; renderer.setViewport(hw, 0, W - hw, H); renderer.setScissor(hw, 0, W - hw, H); renderer.render(scene, camera);
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+}
 let lastViewKind = '';
 const PROF = { state: 0, scene: 0, ui: 0, n: 0 };
 let dprAuto = Math.min(window.devicePixelRatio || 1, 2), dprTarget = dprAuto, adaptT = 0;
@@ -259,7 +282,8 @@ function frame(now) {
     if (lastViewKind === 'gal') hideGalLabels();
     if (lastViewKind !== 'sys') { lastViewKind = 'sys'; for (const k in SKY.labels) { SKY.labels[k].style.display = 'none'; SKY.labels[k]._on = false; } }
     const origin = stepCamera(now);
-    updateScene(ST, origin); updateLabels(); renderScene(scene, camera);
+    updateScene(ST, origin); updateLabels();
+    if (S.cmp && HX.on) renderCompare(); else renderScene(scene, camera);
   }
   const p2 = performance.now();
   uiTick(now);

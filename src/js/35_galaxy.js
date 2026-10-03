@@ -1,7 +1,7 @@
 // ===================== 35_galaxy.js — Milky Way view: the Sun's helical path around the Galactic Centre =====================
 const galScene = new THREE.Scene();
 const galCam = new THREE.PerspectiveCamera(45, 1, 1e-4, 1e6);
-const GV = { ready: false, gt: 0, playing: false, speed: 20, drift: false, vex: 25, dscale: 0.2, art: true, omega: 28.2, cross: null, crossOmega: null, follow: false, yaw: 0.6, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, tween: null, labels: {}, pathKey: '', info: {}, sun: null };
+const GV = { ready: false, gt: 0, playing: false, speed: 20, drift: false, vex: 25, dscale: 0.2, art: true, gaia: true, scaleName: 'mw', omega: 28.2, cross: null, crossOmega: null, follow: false, yaw: 0.6, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, tween: null, labels: {}, pathKey: '', info: {}, sun: null };
 const GT_MAX = 650, BEADS = 90;
 const LY_PER_KPC = 3261.56;
 let galDots, galPoints, galPath, galBeads, galSun, galSunRing, galDrop, galGhost = [], galMarkers = [], galDrift = null;
@@ -147,7 +147,7 @@ function updateGalaxy(dt, now) {
   galCam.up.set(0, 1, 0); galCam.lookAt(GV.tx, GV.ty, GV.tz); galCam.near = Math.max(GV.dist * 0.001, 1e-5); galCam.far = 1e9; galCam.updateProjectionMatrix(); galCam.updateMatrixWorld(true);
   const dc = galCam.position.distanceTo(sp), sc = Math.max(0.00025, dc * 0.022);
   galSun.scale.set(sc * 2.2, sc * 2.2, 1); galSunRing.scale.set(sc * 1.6, sc * 1.6, 1);
-  galPoints.material.uniforms.uAlpha.value = Math.max(0.12, Math.min(0.55, 0.22 * Math.pow(GV.dist / 25, 0.42))) * (GV.art ? 0.5 : 1);
+  galPoints.material.uniforms.uAlpha.value = Math.max(0.12, Math.min(0.55, 0.22 * Math.pow(GV.dist / 25, 0.42))) * (GV.art ? 0.5 : 1) * (GV.nearFade == null ? 1 : GV.nearFade);
   const pathVis = GV.dist < 2500; galPath.visible = galDots.visible = galBeads.visible = galSun.visible = galSunRing.visible = galDrop.visible = pathVis;
   galPoints.material.uniforms.uK.value = Math.max(1.4, Math.min(2.4, 2.4 - GV.dist / 80));
   GV.sun = s; GV.info = { gt: GV.gt, R: s.R, y: s.y, speed: s.speed, vR: s.vR, phi: s.phi, dist: GV.dist };
@@ -162,7 +162,7 @@ function updateGalaxy(dt, now) {
   [5, 10, 15].forEach(R => lab('ring' + R, `${R} kpc · ${(R * LY_PER_KPC / 1000).toFixed(0)}k ly`, 'ring', new THREE.Vector3(-R * 0.7071, 0, -R * 0.7071), 0, 0, on && GV.dist > 10 && GV.dist < 110));
   for (const m of galMarkers) { const show = on && Math.abs(m.t) <= 560 && m.t < 0; lab('mk' + m.t, m.txt, 'mk', galPoint(m.t), 8, -4, show && GV.dist < 120 && !GV.drift); }
   if (GV.drift) lab('drift', 'Galaxy drifts toward the Great Attractor (l 266°, b 29°) →', 'drift', new THREE.Vector3(D[0] * 140, D[1] * 140, D[2] * 140), 0, 0, on); else lab('drift', '', 'drift', new THREE.Vector3(), 0, 0, false);
-  updateFar(GV.dist, on);
+  updateFar(GV.dist, on, sp);
 }
 const _gv = new THREE.Vector3(), _gv2 = new THREE.Vector3();
 function placeGalLabel(el, pos, ox, oy, show) {

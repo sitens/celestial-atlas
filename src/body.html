@@ -1,50 +1,67 @@
 <canvas id="gl" tabindex="0" aria-label="3D solar system"></canvas>
 <div id="labels"></div>
+<div id="fade"></div>
 
 <header id="topbar">
-  <div class="brand"><span class="mark"></span><b>Celestial Atlas</b><small>Earth &amp; Solar System</small></div>
+  <button class="brandbtn" id="btnHome" data-tip="home"><span class="mark"></span><b>Celestial Atlas</b></button>
   <div class="search">
     <input id="q" type="search" placeholder="Search any city or place…" autocomplete="off" spellcheck="false" aria-label="Search location">
-    <button class="ibtn" id="btnGeo" title="Use my location">◎ Me</button>
-    <button class="ibtn" id="btnManual" title="Enter latitude / longitude">⌖ Lat/Lon</button>
+    <button class="ibtn" id="btnPlaceMenu" data-tip="placeMenu" aria-label="More ways to set your place">⌖</button>
+    <div id="placeMenu" class="pop"><button id="btnGeo">◎ Use my location</button><button id="btnManual">⌖ Enter latitude / longitude…</button></div>
     <div id="sugg" role="listbox"></div>
   </div>
-  <div class="clocks">
-    <span id="badge" class="badge live">LIVE</span>
-    <div class="clock"><label>Local · <span id="tzName">—</span></label><b id="clkLocal">—</b></div>
-    <div class="clock"><label>UTC offset</label><b id="clkOff" style="font-size:12px">—</b></div>
-    <div class="clock"><label>UTC</label><b id="clkUTC">—</b></div>
-    <button class="ibtn" id="btnAbout" title="About, sources, self-test">ⓘ</button>
-  </div>
+  <button class="pill" id="clockPill" data-tip="clock"><span id="badge" class="badge live">LIVE</span><b id="clkLocal"><span class="cd">—</span> <span class="ct"></span></b><i>▾</i></button>
+  <button class="ibtn" id="btnGuide" data-tip="guide" aria-pressed="true">💬<span class="d-only"> Guide</span></button>
+  <button class="ibtn" id="btnMenu" data-tip="menu" aria-label="Menu">☰</button>
 </header>
 
-<div id="timebar" aria-label="Time travel">
-  <span class="grp">
+<div id="timePop" class="pop" aria-label="Time travel">
+  <div class="popHead"><b>Time travel</b><span class="note" style="margin:0">Local · <span id="tzName">—</span> · <span id="clkOff">—</span> · UTC <span id="clkUTC">—</span></span><button class="x" data-closepop>✕</button></div>
+  <div class="grp">
     <div class="seg" id="zoneSeg"><button data-z="local" class="on">Location time</button><button data-z="utc">UTC</button></div>
     <input class="fld" type="date" id="tmDate" min="1000-01-01" max="3000-12-31" aria-label="Date">
     <input class="fld" type="time" id="tmTime" step="1" aria-label="Time">
-    <input class="fld" type="text" id="tmISO" placeholder="YYYY-MM-DD HH:MM:SS" title="Type an ISO date/time, press Enter" aria-label="ISO date time">
-  </span>
-  <span class="grp">
-    <div class="chipset" id="stepsBack"></div>
-    <button class="chip" id="btnNow" title="Return to the live clock (N)">⟲ Now</button>
-    <div class="chipset" id="stepsFwd"></div>
-  </span>
-  <span class="grp">
+    <input class="fld" type="text" id="tmISO" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="ISO date time">
+  </div>
+  <div class="grp stepgrp"><div class="chipset" id="stepsBack"></div><button class="chip" id="btnNow2">⟲ Now</button><div class="chipset" id="stepsFwd"></div></div>
+  <div class="grp">
     <select class="fld" id="evSel" aria-label="Event jump"></select>
-    <button class="chip" id="evPrev" title="Previous event">◀ prev</button>
-    <button class="chip" id="evNext" title="Next event">next ▶</button>
-  </span>
-  <span class="grp">
-    <select class="fld" id="preSel" aria-label="Famous moments"></select>
-    <button class="chip" id="btnCopy" title="Copy a shareable link to this exact view">⧉ Copy link</button>
-  </span>
+    <button class="chip" id="evPrev">◀ prev</button><button class="chip" id="evNext">next ▶</button>
+  </div>
+  <div class="grp"><select class="fld" id="preSel" aria-label="Famous moments"></select></div>
+</div>
+
+<div id="mainMenu" class="pop">
+  <button id="mmTime">🕒 Time travel…</button>
+  <button id="mnL">📍 Place &amp; weather</button>
+  <button id="mnR">🌙 Sky &amp; eclipses</button>
+  <button id="mmEcl">🌑 Eclipse finder…</button>
+  <button id="mmPanels">▢ Hide / show side panels</button>
+  <button id="btnCopy">⧉ Copy link to this exact view</button>
+  <button id="mmVoice">🔊 Read narration aloud: <b id="mmVoiceState">off</b></button>
+  <button id="btnAbout">ⓘ About, sources &amp; self-test</button>
+</div>
+
+<div id="optSheet" class="pop" aria-label="Options">
+  <div class="popHead"><b>Options</b><span class="note" style="margin:0" id="optFor"></span><button class="x" data-closepop>✕</button></div>
+  <div class="optSec"><h4>Show</h4><div class="chipset wrapchips" id="toggles"></div></div>
+  <div class="optSec hxo"><h4>Helix</h4>
+    <div class="optrow"><span>Trail span</span><input type="range" id="hxSpan" min="2" max="40" value="12" aria-label="Helix span in years"><span id="hxSpanV">12 y</span></div>
+    <div class="optrow"><span>Stretch</span><input type="range" id="hxK" min="4" max="60" value="18" aria-label="Helix stretch"><span id="hxKV">18</span></div>
+  </div>
+  <div class="optSec galo"><h4>Galaxy</h4>
+    <div class="chipset wrapchips"><button class="chip on" id="gArt" data-tip="gArt">NASA art</button><button class="chip on" id="gGaia" data-tip="gGaia">Gaia stars</button><button class="chip" id="gDrift" data-tip="gDrift">Helix through space</button><button class="chip" id="gFollow" data-tip="gFollow">Follow Sun</button><button class="chip" id="gTop" data-tip="gTop">Top view</button><button class="chip" id="gEdge" data-tip="gEdge">Edge-on view</button></div>
+    <div class="optrow"><span>Drift speed</span><input type="range" id="gDs" min="5" max="100" value="20" aria-label="Drift speed scale"><span id="gDsv">20%</span></div>
+    <div class="optrow"><span>Vertical ×</span><input type="range" id="gVex" min="1" max="60" value="25" aria-label="Vertical exaggeration"><span id="gVexv">25</span></div>
+    <div class="optrow"><span>Arm pattern speed Ωp</span><select class="fld" id="gOmega" aria-label="Spiral pattern speed"><option value="20">20 km/s/kpc (Dias &amp; Lépine 2005)</option><option value="25">25 km/s/kpc</option><option value="28.2" selected>28.2 km/s/kpc (Dias+ 2019)</option><option value="32">32 km/s/kpc</option></select></div>
+  </div>
+  <div class="optSec skyo"><h4>Sky</h4>
+    <div class="optrow"><span>Field of view</span><input type="range" id="fov" min="2" max="110" value="60" aria-label="Field of view"><span id="fovV">60°</span></div>
+  </div>
 </div>
 
 <div id="banner"><b>TIME TRAVEL</b><span id="bannerTxt"></span><button id="bannerNow">Return to Now</button></div>
 <div id="rangeWarn"></div>
-
-<div id="mobnav"><button id="mnL">Place</button><button id="mnR">Sky &amp; Eclipses</button></div>
 
 <aside class="panel" id="pLeft">
   <section class="card" id="cLoc"><h3>Location <span class="src" id="locSrc"></span></h3>
@@ -64,53 +81,43 @@
 </aside>
 
 <div id="skyInfo"><div class="a" id="skyA"></div><div class="b" id="skyB"></div></div>
-<div id="skyBar">
-  <button class="chip" data-aim="sun">☀ Sun</button><button class="chip" data-aim="moon">☾ Moon</button>
-  <button class="chip" data-aim="north">N</button><button class="chip" data-aim="east">E</button><button class="chip" data-aim="south">S</button><button class="chip" data-aim="west">W</button>
-  <span class="note" style="margin:0">FOV</span><input type="range" id="fov" min="2" max="110" value="60" aria-label="Field of view"><span id="fovV" class="note" style="margin:0;width:34px">60°</span>
-</div>
+<div id="skyBar"><button class="chip" data-aim="sun" data-tip="aimSun">☀ Sun</button><button class="chip" data-aim="moon" data-tip="aimMoon">☾ Moon</button><span class="seg"><button data-aim="north">N</button><button data-aim="east">E</button><button data-aim="south">S</button><button data-aim="west">W</button></span></div>
 
 <div id="hxBar">
-  <div class="hxrow"><b>Helical motion</b><span class="note" style="margin:0">The whole Solar System rides the Sun around the Galaxy; every planet (and the Moon around Earth) corkscrews behind it.</span></div>
-  <div class="hxrow"><span class="note" style="margin:0">Trail span</span><input type="range" id="hxSpan" min="2" max="40" value="12" aria-label="Helix span in years"><span id="hxSpanV" class="note" style="margin:0;width:34px">12 y</span>
-    <span class="note" style="margin:0">Stretch</span><input type="range" id="hxK" min="4" max="60" value="18" aria-label="Helix stretch"><span id="hxKV" class="note" style="margin:0;width:24px">18</span>
-    <button class="chip" id="hxGal">Zoom out to the Galaxy ↗</button><button class="chip" id="hxOff">✕</button></div>
-  <div class="hxrow"><span class="note" id="hxNote" style="margin:0"></span></div>
+  <div class="hxrow"><b>Helical motion</b><span class="note" id="hxNote" style="margin:0"></span></div>
+  <div class="hxrow"><button class="chip" id="hxCmp" data-tip="hxCmp">⇄ Compare with flat view</button><button class="chip" id="hxGal" data-tip="hxGal">Zoom out to the Galaxy ↗</button><button class="chip" id="hxOff">✕</button></div>
 </div>
+<div id="cmpCap"><span>Flat view · the Sun stands still (the textbook picture)</span><span>Real motion · the Sun carries the system at 246 km/s</span></div>
 <div id="galInfo"><div class="a" id="galA"></div><div class="b" id="galB"></div></div>
-<div id="galBar">
-  <div class="gbrow"><span class="seg" id="gScales"><button data-s="mw" class="on">Milky Way</button><button data-s="sat">Neighbours</button><button data-s="lg">Local Group</button><button data-s="lan">Laniakea</button></span>
-    <button class="chip on" id="gArt" title="Show the NASA/JPL artist concept disc under the model stars">NASA art</button><span class="sep"></span>
-    <button class="pbtn" id="gRev" title="Run time backward">⏪</button><button class="pbtn" id="gPlay" title="Play / pause galactic time">▶</button>
-    <select class="fld" id="gSpd" aria-label="Galactic playback speed"><option value="5">5 Myr/s</option><option value="20" selected>20 Myr/s</option><option value="60">60 Myr/s</option><option value="150">150 Myr/s</option></select>
-    <input type="range" id="gT" min="-650" max="650" step="0.5" value="0" aria-label="Galactic time (Myr from now)"><span id="gTv" class="note" style="margin:0;width:92px;font-family:var(--mono)">now</span>
-    <button class="chip" id="gNow">⟲ Now</button></div>
-  <div class="gbrow">
-    <button class="chip" id="gDrift" title="Add the Galaxy's own motion through space (~560 km/s relative to the CMB): the Sun's path becomes a true helix">Helix through space</button>
-    <span class="note" style="margin:0">Drift ×</span><input type="range" id="gDs" min="5" max="100" value="20" aria-label="Drift speed scale"><span id="gDsv" class="note" style="margin:0;width:34px">20%</span>
-    <button class="chip" id="gFollow" title="Keep the Sun centred">Follow Sun</button>
-    <span class="note" style="margin:0">Vertical ×</span><input type="range" id="gVex" min="1" max="60" value="25" aria-label="Vertical exaggeration"><span id="gVexv" class="note" style="margin:0;width:26px">25</span>
-    <button class="chip" id="gTop">Top</button><button class="chip" id="gEdge">Edge-on</button></div>
-  <div class="gbrow"><span class="note" style="margin:0" title="The spiral pattern rotates rigidly at the pattern speed; the Sun overtakes or lags it">Arm pattern speed Ωp</span>
-    <select class="fld" id="gOmega" aria-label="Spiral pattern speed"><option value="20">20 km/s/kpc (Dias &amp; Lépine 2005)</option><option value="25">25 km/s/kpc</option><option value="28.2" selected>28.2 km/s/kpc (Dias+ 2019)</option><option value="32">32 km/s/kpc</option></select>
-    <canvas id="gArms" height="38" title="Times when the Sun is inside a spiral arm (model). Click to jump." style="flex:1;min-width:260px;height:38px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:rgba(255,255,255,.04)"></canvas></div>
-</div>
+<div id="galBar"><span class="seg scroll" id="gScales">
+  <button data-s="sun" data-tip="sc-sun">Planets</button><button data-s="near" data-tip="sc-near">Stars</button><button data-s="mw" class="on" data-tip="sc-mw">Milky Way</button><button data-s="sat" data-tip="sc-sat">Neighbours</button><button data-s="lg" data-tip="sc-lg">Local Group</button><button data-s="hub" data-tip="sc-hub">Galaxies</button><button data-s="lan" data-tip="sc-lan">Laniakea</button></span></div>
+
+<aside id="guide" aria-live="polite">
+  <div class="gHead"><b id="gdTitle">Guide</b><span class="grow"></span><button class="ibtn sm" id="gdVoice" data-tip="voice" aria-label="Read aloud">🔊</button><button class="ibtn sm" id="gdMin" data-tip="gdMin" aria-label="Collapse">▾</button></div>
+  <div id="gdText"></div>
+  <div id="gdTips"></div>
+</aside>
+<div id="tt" role="tooltip"></div>
 
 <footer id="dock">
-  <div id="tlwrap" title="Drag to scrub time · wheel to zoom 1 day ↔ 500 years · double-click to reset"><canvas id="tl"></canvas></div>
+  <div id="tlwrap" data-tip="timeline"><canvas id="tl"></canvas></div>
   <div class="dockrow">
-    <button class="pbtn" id="btnRev" title="Reverse (R)">⏪</button>
-    <button class="pbtn" id="btnPlay" title="Play / pause (Space)">▶</button>
-    <select class="fld" id="spdSel" aria-label="Playback speed"></select>
-    <span class="sep"></span>
-    <button class="vbtn on" data-v="system"><kbd>1</kbd>Solar System</button>
-    <button class="vbtn" data-v="earthmoon"><kbd>2</kbd>Earth–Moon</button>
-    <button class="vbtn" data-v="planet"><kbd>3</kbd>Planet focus</button>
-    <button class="vbtn" data-v="sky"><kbd>4</kbd>Sky from here</button>
-    <button class="vbtn" data-v="galaxy"><kbd>5</kbd>Galaxy</button>
-    <button class="vbtn" id="btnTour">🎬 Cinematic tour</button>
+    <nav id="viewbar" aria-label="Views">
+      <button class="vbtn on" data-v="system" data-tip="v-system"><i>☀</i><span>System</span></button>
+      <button class="vbtn" data-v="earthmoon" data-tip="v-earthmoon"><i>🌍</i><span>Earth–Moon</span></button>
+      <button class="vbtn" data-v="planet" data-tip="v-planet"><i>🪐</i><span>Planet</span></button>
+      <button class="vbtn" data-v="sky" data-tip="v-sky"><i>🌌</i><span>Sky</span></button>
+      <button class="vbtn" data-v="galaxy" data-tip="v-galaxy"><i>✺</i><span>Galaxy</span></button>
+    </nav>
     <span class="grow"></span>
-    <span class="chipset" id="toggles"></span>
+    <div class="transport">
+      <button class="pbtn" id="btnRev" data-tip="rev">⏪</button>
+      <button class="pbtn big" id="btnPlay" data-tip="play">▶</button>
+      <select class="fld" id="spdSel" aria-label="Playback speed" data-tip="speed"></select>
+      <button class="chip" id="btnNow" data-tip="now">⟲ Now</button>
+    </div>
+    <button class="chip" id="btnOpt" data-tip="opt">⚙<span class="d-only"> Options</span></button>
+    <button class="chip" id="btnTour" data-tip="tour">🎬<span class="d-only"> Tour</span></button>
   </div>
 </footer>
 
@@ -120,11 +127,13 @@
 
 <div class="modal" id="mAbout"><div class="mbox"><button class="x" data-close>✕</button><h2>About · sources · self-test</h2>
   <p>Every pixel and number is a pure function of one master timestamp. Positions come from <b>Astronomy Engine</b> (Don Cross, MIT) — VSOP87-class planets, a Moon theory, Jupiter's Galilean moons — accurate to about an arcminute for 1700–2200 CE. Other moons use <b>JPL SSD mean elements</b> (epoch J2000; “mean-element accuracy”: good for visuals, not for precise phenomena). Planet orientation uses IAU WGCCRE rotation models. Eclipse shadows are computed analytically per pixel from the true Sun/occluder geometry (exact disc-overlap), so umbra and penumbra land where the ephemeris says. Eclipse times/contacts come from Astronomy Engine's search routines, not from animation.</p>
-  <p><b>Limits.</b> 1700–2200 CE: no warning. 1000–1700 and 2200–3000: allowed with a “reduced accuracy” banner. Outside 1000–3000 the picker is disabled. Past dates show the proleptic Gregorian calendar; local time uses today's IANA rules so pre-1970 civil times may differ from history. Star positions are J2000 precessed to the date (no proper motion). Earth city-lights and cloud textures are present-day. Planet surfaces, ring shadows and moon shadows on Jupiter use real geometry, but body sizes in “Explorable” scale are exaggerated.</p>
-  <p><b>Data &amp; credits.</b> Geocoding &amp; weather: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC-BY 4.0; forecast, ERA5 historical archive). Planet &amp; Milky Way textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a> (CC BY 4.0, NASA-derived). Earth, Moon, clouds, city lights: three.js example textures (NASA Visible Earth / Blue Marble derived). Hubble galaxies: NASA/ESA (via Wikimedia Commons): NGC 4414, M51, NGC 1300, M104, Antennae. Star &amp; constellation data: Yale Bright Star Catalogue via d3-celestial (BSD). Satellite elements: NASA/JPL SSD. Rendering: three.js (MIT).</p>
+  <p><b>Limits.</b> 1700–2200 CE: no warning. 1000–1700 and 2200–3000: allowed with a “reduced accuracy” banner. Outside 1000–3000 the picker is disabled. Past dates show the proleptic Gregorian calendar; local time uses today's IANA rules so pre-1970 civil times may differ from history. Star positions are J2000 positions moved by proper motion and precessed to the date. Earth city-lights and cloud textures are present-day. Planet surfaces, ring shadows and moon shadows on Jupiter use real geometry, but body sizes in “Explorable” scale are exaggerated.</p>
+  <p><b>Data &amp; credits.</b> Geocoding &amp; weather: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC-BY 4.0; forecast, ERA5 historical archive). Planet &amp; Milky Way textures: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a> (CC BY 4.0, NASA-derived). Earth, Moon, clouds, city lights: three.js example textures (NASA Visible Earth / Blue Marble derived). Hubble galaxies: NASA/ESA (via Wikimedia Commons): NGC 4414, M51, NGC 1300, M104, Antennae. Gaia DR3: ESA/Gaia/DPAC. Star &amp; constellation data: Yale Bright Star Catalogue via d3-celestial (BSD). Satellite elements: NASA/JPL SSD. Rendering: three.js (MIT).</p>
   <p><b>Helical motion (Solar System view, “Helix” chip).</b> The Sun carries the whole system at ≈ 246 km/s (≈ 52 AU every year) around the Galactic Centre, toward Galactic l ≈ 87°, b ≈ 2° (Cygnus). In the Galaxy's frame each planet therefore traces a corkscrew (the Moon a smaller one around Earth's). Trails are real positions from the ephemeris, displaced along the Sun's velocity; the along-track stretch is exaggerated (slider) because the true pitch is ≈ 52× the orbit radius — the panel states the factor. In “True scale” the helix is drawn at its real length. In the default scale the Moon's orbit is drawn compact from afar (so it can't cross the orbits of Venus or Mars) and opens to full size as you approach Earth.</p>
   <p><b>Beyond the Milky Way.</b> The NASA/JPL-Caltech/R. Hurt (SSC-Caltech) artist's concept of the Milky Way (public domain, via Wikimedia Commons) is shown beneath the model stars (toggle “NASA art”); it is an illustration, not a photograph — nobody has seen our Galaxy from outside. Spiral arms rotate rigidly at an adjustable pattern speed Ωp (20–32 km/s/kpc; the literature spans this range), and the strip shows when the Sun would be inside an arm (half-width 0.5 kpc, model-dependent). Any link between arm passages and mass extinctions or ice ages is a hypothesis, not a settled result. Neighbour and Local Group positions are catalogue values (McConnachie 2012; NED); the Laniakea view is schematic: cluster positions are catalogue values, the filaments and streamlines are illustrative of the flow toward the Great Attractor (Tully et al. 2014).</p>
-  <p><b>Galaxy view.</b> A schematic Milky Way: 110,000 procedural stars on four logarithmic spiral arms (13° pitch, crossing the Sun line near Reid+2019 positions), a 27° bar and a bulge. The Sun's orbit is integrated in a flat-rotation-curve potential (R₀ 8.18 kpc, v<sub>c</sub> 233 km/s, solar motion U,V,W = 11.1, 12.24, 7.25 km/s): one galactic year ≈ 223 Myr, radial swing 8.1–9.2 kpc, vertical oscillation ±85 pc every ≈ 70 Myr. The vertical wobble is multiplied (slider) so it is visible; the disc is drawn thicker than reality. “Helix through space” adds the Galaxy's ≈ 560 km/s motion relative to the CMB (Sun’s 370 km/s dipole minus its orbital velocity; toward l ≈ 266°, b ≈ 29°) — the path then winds with a pitch of ≈ 125 kpc per galactic year (drawn at 20% by default so the coils show; the Drift slider goes to the real 100%).</p>
+  <p><b>Galaxy view.</b> A schematic Milky Way: 110,000 procedural stars on four logarithmic spiral arms (13° pitch, crossing the Sun line near Reid+2019 positions), a 27° bar and a bulge. The Sun's orbit is integrated in a flat-rotation-curve potential (R₀ 8.18 kpc, v<sub>c</sub> 233 km/s, solar motion U,V,W = 11.1, 12.24, 7.25 km/s): one galactic year ≈ 223 Myr, radial swing 8.1–9.2 kpc, vertical oscillation ±85 pc every ≈ 70 Myr. The Sun's vertical wobble is multiplied (slider) so it is visible; the disc itself is drawn at its true thickness (a ~0.3 kpc scale height — about 1:50 against its 16 kpc radius), with a flared outer disc, a thick disc, a boxy/peanut bulge, an outer warp, a stellar halo and dust lanes, so edge-on it is the thin, bulging, warped disc astronomers see in other galaxies. “Helix through space” adds the Galaxy's ≈ 560 km/s motion relative to the CMB (Sun’s 370 km/s dipole minus its orbital velocity; toward l ≈ 266°, b ≈ 29°) — the path then winds with a pitch of ≈ 125 kpc per galactic year (drawn at 20% by default so the coils show; the Drift slider goes to the real 100%).</p>
+  <p><b>Real stars and real galaxy shapes.</b> Around the Sun, “Stars” shows 50,146 real stars from <b>ESA Gaia DR3</b> (a 1-in-12 random sample of the 600,000 stars brighter than G = 10.5 within 1 kpc; CC BY-SA 3.0 IGO) at their measured 3-D positions, with the nearest named stars from the Hipparcos-derived HYG database. The neighbouring galaxies are 3-D point clouds, tilted to their catalogue inclinations and position angles (Andromeda 77.5° / 37.7°, Triangulum 56°, the Large Magellanic Cloud 35°, the Small Cloud stretched along our line of sight, dwarf spheroidals as ellipsoids); stars within them are procedural — only the shapes and orientations are data-driven. “Planets” zooms through to the Solar System, where the helix lives.</p>
+  <p><b>Guide, narration and tips.</b> The Guide describes what is on screen right now (from the live ephemeris), suggests what to try, and can read aloud (your browser's speech synthesis; off by default). Hover or long-press any button for a tooltip that shows its live effect.</p>
   <p>Built by <a href="https://siten.ai/" target="_blank" rel="noopener">Siten Sanghvi</a> · open source (MIT) at <a href="https://github.com/sitens/celestial-atlas" target="_blank" rel="noopener">github.com/sitens/celestial-atlas</a>. Star positions include proper motion from the Hipparcos-derived <a href="https://github.com/astronexus/HYG-Database" target="_blank" rel="noopener">HYG database</a> (CC BY-SA 4.0); the 1000–3000 CE eclipse timeline table is precomputed with Astronomy Engine. Earth cloud cover is a live 20° Open-Meteo grid draped over a static cloud texture.</p>
   <div class="mrow"><button class="btn pri" id="btnTests">Run self-tests</button><span class="note" id="testSum"></span></div>
   <div id="testOut"></div>

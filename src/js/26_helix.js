@@ -101,9 +101,17 @@ function hxFrame() { // camera that sees the corkscrews side-on, Sun leading to 
   const yaw = Math.atan2(-HX.u.z, HX.u.x);
   flyTo({ focus: 'Sun', dist: S.trueScale ? hxK() * HX.span * 0.7 : 150 + HX.span * HX.K * 0.25, pitch: 0.32, yaw, dur: 2200 });
 }
+// side-by-side explainer: left = textbook flat view (Sun at rest), right = the same moment with the Sun's real motion drawn as helices
+function setCompare(on) {
+  on = !!on && HX.on && S.view === 'system'; S.cmp = on;
+  document.body.classList.toggle('cmp', on); const b = $('hxCmp'); if (b) { b.classList.toggle('on', on); b.textContent = on ? '✕ End comparison' : '⇄ Compare with flat view'; }
+  if (!on) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+  if (typeof setGuide === 'function' && document.body.classList.contains('guide')) { if (on) { setCompare.wasMin = document.body.classList.contains('min'); setGuide(true, true); } else if (setCompare.wasMin === false) { setGuide(true, false); setCompare.wasMin = null; } }
+}
 function setHelix(on, opts = {}) {
   HX.on = !!on; if (on) hxInit();
   const chip = document.querySelector('[data-tg="helix"]'); if (chip) chip.classList.toggle('on', HX.on);
+  document.body.classList.toggle('hx', HX.on); if (!HX.on && S.cmp) setCompare(false);
   if ($('hxBar')) $('hxBar').style.display = HX.on && S.view !== 'sky' && S.view !== 'galaxy' ? 'flex' : 'none';
   if (HX.on && !opts.noFly) {
     if (S.view === 'sky' || S.view === 'galaxy') setView('system', { noFly: true });

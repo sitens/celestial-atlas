@@ -17,22 +17,22 @@
  [
   "B view 'system' renders (non-blank)",
   true,
-  "variance 359.6"
+  "variance 422.3"
  ],
  [
   "B view 'earthmoon' renders (non-blank)",
   true,
-  "variance 240.3"
+  "variance 238.9"
  ],
  [
   "B view 'planet' renders (non-blank)",
   true,
-  "variance 316.1"
+  "variance 551.1"
  ],
  [
   "B view 'sky' renders (non-blank)",
   true,
-  "variance 189.0"
+  "variance 2476.5"
  ],
  [
   "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
@@ -42,12 +42,12 @@
  [
   "C weather card for Tokyo",
   true,
-  "21\u00b0C \u2601\ufe0f Overcast Feels like 23 \u00b0C Humidity 83 % Wind 4 km/h NNE \u00b7 gust 22 Pressure 1014 hP"
+  "18\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 18 \u00b0C Humidity 68 % Wind 3 km/h N \u00b7 gust 8 Pressure 1022 h"
  ],
  [
   "C sky view for Tokyo computed",
   true,
-  "{\"sun\":47.22452485989552,\"L\":1}"
+  "{\"sun\":-54.52599407353668,\"L\":0}"
  ],
  [
   "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
@@ -57,12 +57,12 @@
  [
   "C weather card for Sydney",
   true,
-  "24\u00b0C \u2601\ufe0f Overcast Feels like 26 \u00b0C Humidity 62 % Wind 11 km/h SSE \u00b7 gust 30 Pressure 1022 h"
+  "16\u00b0C \ud83c\udf26\ufe0f Light drizzle Feels like 17 \u00b0C Humidity 97 % Wind 7 km/h WNW \u00b7 gust 13 Pressure 10"
  ],
  [
   "C sky view for Sydney computed",
   true,
-  "{\"sun\":59.01030522871221,\"L\":1}"
+  "{\"sun\":-51.42315697461575,\"L\":0}"
  ],
  [
   "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
@@ -72,12 +72,12 @@
  [
   "C weather card for Madrid",
   true,
-  "17\u00b0C \ud83c\udf26\ufe0f Rain showers Feels like 16 \u00b0C Humidity 85 % Wind 14 km/h NE \u00b7 gust 34 Pressure 102"
+  "22\u00b0C \u2601\ufe0f Overcast Feels like 22 \u00b0C Humidity 60 % Wind 5 km/h E \u00b7 gust 15 Pressure 1022 hPa "
  ],
  [
   "C sky view for Madrid computed",
   true,
-  "{\"sun\":-49.268038107142786,\"L\":0}"
+  "{\"sun\":41.950523363875675,\"L\":1}"
  ],
  [
   "D ISO typing '1969-07-20 20:17:00' (UTC)",
@@ -215,6 +215,21 @@
   "26,680 light-years (8.18 kpc) from the Galactic Centre \u00b7 moving 246 km/s \u00b7 radia"
  ],
  [
+  "G2b guide narrates the Galaxy view",
+  true,
+  "Our place in the Milky Way"
+ ],
+ [
+  "G2c transport is galactic in the Galaxy view (speed options in Myr/s)",
+  true,
+  ""
+ ],
+ [
+  "G2d dock timeline is the galactic strip: click at 75% sets ~+325 Myr",
+  true,
+  "325 Myr"
+ ],
+ [
   "G3 time slider moves the Sun along its orbit (66 Myr ago)",
   true,
   "The Sun 66 million years ago"
@@ -222,7 +237,7 @@
  [
   "G4 helix-through-space mode",
   true,
-  ""
+  " Galaxy \u25b8 Drift speed). The planets' own, much tighter corkscrews are what you saw behind the Sun at the smallest scale."
  ],
  [
   "W1 Moon orbit (overview) fits inside the gaps to Venus and Mars orbits (was crossing them)",
@@ -237,7 +252,7 @@
  [
   "W3 helix: 9 planets + Moon trails drawn, group visible",
   true,
-  "{'n': 672, 'ext': 443.28246257144195, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
+  "{'n': 672, 'ext': 443.31309799841256, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
  ],
  [
   "W4 helix: Earth's corkscrew is long along the Sun's direction of travel",
@@ -263,6 +278,11 @@
   "X2 Local Group view: Andromeda, Triangulum and friends visible",
   true,
   "{'d': 1350, 'lgv': True, 'lanv': False, 'items': 17}"
+ ],
+ [
+  "X2b Hubble galaxies view: 5 labelled showpiece galaxies visible",
+  true,
+  "{'d': 40000, 'lgv': True, 'lanv': True, 'items': 8}"
  ],
  [
   "X3 Laniakea view: supercluster, streamlines and Great Attractor visible",
@@ -297,12 +317,12 @@
  [
   "L past date uses archive data, labelled 'Historical (ERA5 reanalysis)'",
   true,
-  "18\u00b0C \u2601\ufe0f Overcast Feels like 16 \u00b0C Humidity 33 % Wind 6 km/h SW \u00b7 gust 18 Pressure 1020 hPa Precipita"
+  "26\u00b0C \u2601\ufe0f Overcast Feels like 28 \u00b0C Humidity 57 % Wind 17 km/h S \u00b7 gust 34 Pressure 1012 hPa Precipita"
  ],
  [
   "L +1 year: 'No forecast available' + labelled climatology",
   true,
-  "No forecast available this far ahead. 19\u00b0C typical Mean cloud cover 17 % Chance of rain 0 % Typical wind 9 km/h Climatol"
+  "No forecast available this far ahead. 20\u00b0C typical Mean cloud cover 15 % Chance of rain 10 % Typical wind 9 km/h Climato"
  ],
  [
   "L before 1940: 'No weather data'",
@@ -350,19 +370,59 @@
   "Inner planets, exactly where they are"
  ],
  [
+  "U1 clock pill opens the time popover",
+  true,
+  ""
+ ],
+ [
+  "U2 only one popover at a time (menu replaces time)",
+  true,
+  ""
+ ],
+ [
+  "U3 Escape closes popovers",
+  true,
+  ""
+ ],
+ [
+  "U4 Options sheet lists the toggles",
+  true,
+  ""
+ ],
+ [
+  "U5 guide narrates the system view with live values",
+  true,
+  "3 Oct 2026 08:25. You are looking down on the plane of Earth's orbit. Earth is 1.001 AU from the Sun"
+ ],
+ [
+  "U6 hover tooltip shows the live effect (speed + time)",
+  true,
+  "Play Freezes the live clock; then plays from here. 1\u00d7 real-time \u00b7 3 Oct 2026 08:25"
+ ],
+ [
+  "U7 compare mode splits the screen",
+  true,
+  ""
+ ],
+ [
+  "U8 compare ends cleanly",
+  true,
+  ""
+ ],
+ [
   "P FPS, solar-system view (Intel HD 4600, 1440x900; shared GPU)",
   true,
-  "19 fps @ dpr 0.70, 57 draw calls, 124486 tris"
+  "22 fps @ dpr 0.70, 57 draw calls, 124486 tris"
  ],
  [
   "P FPS, Earth close-up",
   false,
-  "18 fps @ dpr 0.70"
+  "14 fps @ dpr 0.70"
  ],
  [
   "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
   true,
-  "spinBlend=0.054"
+  "spinBlend=0.000"
  ],
  [
   "Q offline weather/geocode: app still boots",
@@ -395,6 +455,11 @@
   "STILL LOADING\u2026 (THREE.JS FROM CDN?)"
  ],
  [
+  "S1 mobile top bar fits inside 390px (menu/guide/clock all on-screen)",
+  true,
+  "right edge 382"
+ ],
+ [
   "S mobile 390px: no horizontal page scroll",
   true,
   "390"
@@ -407,6 +472,6 @@
  [
   "T final file size <= 16 MB",
   true,
-  "2.31 MB"
+  "2.89 MB"
  ]
 ]

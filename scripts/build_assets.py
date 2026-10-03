@@ -110,11 +110,46 @@ SATS = {
     "Triton": ["Neptune", 354800, 0.000, 0.0, 63.0, 157.3, 178.1, 5.876994, 0.0, 340.379, 299.8, 43.1],
 }
 
+# ---- Gaia DR3 nearby stars (ESA/Gaia/DPAC, CC BY-SA 3.0 IGO): ~50k stars, 1-in-12 random subsample of G<10.5, parallax>1 mas, plx/err>10 ----
+import struct, math
+gaia = bytearray(); gn = 0
+with open(f"{RAW}/gaia_nearby.csv", encoding="utf-8") as fh:
+    next(fh)
+    for line in fh:
+        try:
+            l, bb, plx, g, c = line.strip().split(",")
+            l, bb, plx, g = float(l), float(bb), float(plx), float(g); c = float(c) if c not in ("", "null") else 0.8
+        except ValueError:
+            continue
+        d = 1000.0 / plx; lr, br = math.radians(l), math.radians(bb)
+        xg, yg, zg = d * math.cos(br) * math.cos(lr), d * math.cos(br) * math.sin(lr), d * math.sin(br)
+        fx, fy, fz = -xg, zg, yg                       # galaxy frame (matches 15_galaxy_math.js galToFrame), pc relative to the Sun
+        q = lambda v: max(-32767, min(32767, int(round(v * 10))))   # 0.1 pc units
+        gaia += struct.pack("<hhhBB", q(fx), q(fy), q(fz), max(0, min(255, int(round(g * 10)))), max(0, min(255, int(round((c + 0.6) * 50)))))
+        gn += 1
+# named nearby stars (HYG v4.0, Hipparcos-derived) within 60 pc, frame coords in pc
+M = [[-0.0548755604, -0.8734370902, -0.4838350155], [0.4941094279, -0.4448296300, 0.7469822445], [-0.8676661490, -0.1980763734, 0.4559837762]]
+near = []
+with gzip.open(f"{RAW}/hyg.csv.gz", "rt", encoding="utf-8") as fh:
+    for row in csv.DictReader(fh):
+        nm = row["proper"].strip()
+        try:
+            dist = float(row["dist"]); x, y, z = float(row["x"]), float(row["y"]), float(row["z"]); mag = float(row["mag"])
+        except ValueError:
+            continue
+        if not nm or nm == "Sol" or dist <= 0 or dist > 60 or dist >= 100000:
+            continue
+        xg = M[0][0] * x + M[0][1] * y + M[0][2] * z; yg = M[1][0] * x + M[1][1] * y + M[1][2] * z; zg = M[2][0] * x + M[2][1] * y + M[2][2] * z
+        near.append([nm, round(-xg, 2), round(zg, 2), round(yg, 2), round(mag, 2)])
+near.sort(key=lambda r: r[4])
+
 with open(OUT, "w", encoding="utf-8") as f:
     f.write("const TEX=" + json.dumps(tex) + ";\n")
     f.write("const STARS=" + json.dumps(stars, separators=(",", ":")) + ";\n")
     f.write("const STAR_NAMES=" + json.dumps(named, separators=(",", ":"), ensure_ascii=False) + ";\n")
     f.write("const CONSTS=" + json.dumps(cons, separators=(",", ":"), ensure_ascii=False) + ";\n")
+    f.write("const GAIA=" + json.dumps({"n": gn, "b64": base64.b64encode(bytes(gaia)).decode()}, separators=(",", ":")) + ";\n")
+    f.write("const NEAR_STARS=" + json.dumps(near, separators=(",", ":"), ensure_ascii=False) + ";\n")
     f.write("const SATS=" + json.dumps(SATS, separators=(",", ":")) + ";\n")
 print(f"wrote {OUT}: {os.path.getsize(OUT)/1024:.0f} KB; stars={len(stars)} named={len(named)} cons={len(cons)}")
 for k, v in tex.items():

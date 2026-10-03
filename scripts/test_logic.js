@@ -88,7 +88,7 @@ const sunMad = X.v3.dot(X.geoDir(ax, 0, 90), sunDir); console.log('  lon 90E·su
   ok('galaxy: radial excursion 8.1-9.2 kpc (epicycle about a 8.6 kpc guiding radius)', rmin > 8.0 && rmax < 9.3, `${rmin.toFixed(2)}-${rmax.toFixed(2)}`);
   const d = X.galaxyDrift(); ok('galaxy: drift ~ 560 km/s toward l~266 b~29 (Great Attractor side)', Math.abs(d.speed - 560) < 15 && Math.abs(d.l - 265.7) < 3 && Math.abs(d.b - 28.7) < 3, `${d.speed.toFixed(0)} km/s l=${d.l.toFixed(1)} b=${d.b.toFixed(1)}`);
   const mw = X.buildMilkyWay(20000); let rr = 0; for (let i = 0; i < mw.n; i++) rr = Math.max(rr, Math.hypot(mw.pos[3 * i], mw.pos[3 * i + 2]));
-  ok('galaxy: procedural stars built (count, disc radius < 22 kpc)', mw.n === 20000 && rr < 22, `${mw.n} stars, rmax ${rr.toFixed(1)}`);
+  ok('galaxy: procedural stars built (count, disc+halo radius < 30 kpc)', mw.n === 20000 && rr < 30, `${mw.n} stars, rmax ${rr.toFixed(1)}`);
   const p = X.armXZ(X.ARMS[0], 10.1); ok('galaxy: Perseus arm crosses the Sun line at ~10 kpc', Math.abs(p[0] - 10.1) < 0.01 && Math.abs(p[1]) < 0.01);
   const sg = X.armXZ(X.ARMS[1], X.ARMS[1].R0); ok('galaxy: Sagittarius-Carina arm ~ 7 kpc on the Sun line', Math.abs(sg[0] - 7.0) < 0.3, sg[0].toFixed(2));
 }
