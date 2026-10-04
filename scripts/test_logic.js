@@ -1,9 +1,9 @@
 // Node harness: evaluates the pure-logic modules (no DOM/THREE) and checks them against known events.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 global.Astronomy = require('astronomy-engine');
-const src = ['src/assets.js', 'src/eclipses.js', 'src/js/00_util.js', 'src/js/10_astro.js', 'src/js/15_galaxy_math.js'].map(f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8')).join('\n');
-const ctx = vm.createContext({ Astronomy: global.Astronomy, console, Date, Math, Intl, Set, Object, Array, JSON, Number, String, isFinite, parseInt });
-vm.runInContext(src + '\n;this.__api={armCrossings,nearestArm,LOCAL_GROUP,LANIAKEA,lbToFrame,MASS_EXT,sunOrbit,sunAt,galaxyDrift,buildMilkyWay,ARMS,armXZ,spurXZ,GM,ECLIPSE_TABLE,STARS,runTimeSelfTests,computeState,solarEclipseNow,lunarEclipseNow,mkObs,timeOf,utcFromParts,localToUTC,partsInZone,eclipseList,findEvent,stepGlobal,localSolar,upTonight,skyBody,earthAxes,geoDir,BODY,v3,SATS,fmtUTC,fmtLocal,findMeteor,moonAxes,discCoverFrac,globalSolarAfter,lunarAfter,localLunar,AU_KM,J2000_MS,nightWindow};', ctx);
+const src = ['src/assets.js', 'src/eclipses.js', 'src/js/00_util.js', 'src/js/10_astro.js', 'src/js/15_galaxy_math.js', 'src/js/16_merger_math.js', 'src/js/17_sun_life.js'].map(f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8')).join('\n');
+const ctx = vm.createContext({ Astronomy: global.Astronomy, console, Date, Math, Intl, Set, Object, Array, JSON, Number, String, isFinite, parseInt, Float32Array, Uint8Array });
+vm.runInContext(src + '\n;this.__api={mergerOrbit,mergerInit,mergerAdvance,mergerRemnant,MG_P,lifeState,LIFE_PHASES,LIFE_KEYS,LIFE_PLANETS,lifeUofT,bbColor,R_SUN_AU,galaxyBasis,armCrossings,nearestArm,LOCAL_GROUP,LANIAKEA,lbToFrame,MASS_EXT,sunOrbit,sunAt,galaxyDrift,buildMilkyWay,ARMS,armXZ,spurXZ,GM,ECLIPSE_TABLE,STARS,runTimeSelfTests,computeState,solarEclipseNow,lunarEclipseNow,mkObs,timeOf,utcFromParts,localToUTC,partsInZone,eclipseList,findEvent,stepGlobal,localSolar,upTonight,skyBody,earthAxes,geoDir,BODY,v3,SATS,fmtUTC,fmtLocal,findMeteor,moonAxes,discCoverFrac,globalSolarAfter,lunarAfter,localLunar,AU_KM,J2000_MS,nightWindow};', ctx);
 const X = ctx.__api;
 let fail = 0;
 const ok = (n, c, i = '') => { console.log((c ? 'PASS ' : 'FAIL ') + n + (i ? '  — ' + i : '')); if (!c) fail++; };
@@ -102,5 +102,32 @@ const sunMad = X.v3.dot(X.geoDir(ax, 0, 90), sunDir); console.log('  lon 90E·su
   ok('local group: Andromeda ~780 kpc from the Galactic Centre', Math.abs(gc(L('Andromeda')) - 780) < 25, gc(L('Andromeda')).toFixed(0));
   const ga = X.LANIAKEA.find(o => o.ga); ok('laniakea: Great Attractor ~69 Mpc away', Math.abs(Math.hypot(...X.lbToFrame(ga.l, ga.b, ga.d)) - 69) < 0.01);
   ok('mass extinction table has the Big Five', X.MASS_EXT.length === 5 && X.MASS_EXT.some(m => m[0] === 66 && m[0] < m[0] + 1));
+}
+// ---- Milky Way x Andromeda restricted merger + the Sun's life
+{
+  const m31 = X.lbToFrame(121.17, -21.57, 770), R0 = [m31[0] + X.GM.R0, m31[1], m31[2]], P = X.MG_P; P.dtMyr = 2;
+  const o = X.mergerOrbit(R0, P), pr = o.peri.filter(p => p.r < 60);
+  ok('merger: separation today ~ 770 kpc', Math.abs(o.r0 - 774) < 10, o.r0.toFixed(0));
+  ok('merger: first pericentre 3.2-4.4 Gyr from now (literature ~3.9-4.3)', pr[0] && pr[0].tMyr > 3200 && pr[0].tMyr < 4400, pr[0] && (pr[0].tMyr / 1000).toFixed(2) + ' Gyr @' + pr[0].r.toFixed(0) + ' kpc');
+  ok('merger: first pericentre distance 15-45 kpc', pr[0] && pr[0].r > 15 && pr[0].r < 45);
+  ok('merger: second pass 5.0-6.4 Gyr (literature ~5.9)', pr[1] && pr[1].tMyr > 5000 && pr[1].tMyr < 6400, pr[1] && (pr[1].tMyr / 1000).toFixed(2));
+  ok('merger: merged by 5.8-7.6 Gyr', o.mergedMyr > 5800 && o.mergedMyr < 7600, (o.mergedMyr / 1000).toFixed(2));
+  const nb = X.galaxyBasis(10.6847, 41.2687, 37.7, 77.5).y, st = X.mergerInit(500, 500, o, nb, P), p0 = st.pos.slice();
+  X.mergerAdvance(st, o, 1500, 1, P);
+  X.mergerAdvance(st, o, 1500, -1, P); let err = 0; for (let i = 0; i < p0.length; i++) err = Math.max(err, Math.abs(p0[i] - st.pos[i]));
+  ok('merger: leapfrog is time-reversible (3 Gyr forth and back, max error < 0.1 kpc, float32)', err < 0.1 && st.k === 0, err.toExponential(2) + ' kpc');
+  X.mergerAdvance(st, o, 5000, 1, P); const fin = X.mergerRemnant(st, o);
+  ok('merger: remnant after 10 Gyr is compact (half-mass radius 2-12 kpc) and finite', isFinite(fin.rHalf) && fin.rHalf > 2 && fin.rHalf < 12 && isFinite(fin.sunDist), 'rHalf ' + fin.rHalf.toFixed(1) + ' kpc, b/a ' + fin.ba.toFixed(2) + ', c/a ' + fin.ca.toFixed(2));
+  const s0 = X.lifeState(0.17), tip = X.lifeState(0.64), wd = X.lifeState(0.95), mid2 = X.lifeState(0.217);
+  ok('sun life: today L=1, R=1, T≈5772 K, main sequence', Math.abs(s0.L - 1) < 0.01 && Math.abs(s0.R - 1) < 0.01 && Math.abs(s0.T - 5772) < 30 && s0.phase[2] === 'Main sequence', s0.T.toFixed(0));
+  ok('sun life: habitable zone today 0.95-1.67 AU (Kopparapu)', Math.abs(s0.hzIn - 0.95) < 0.02 && Math.abs(s0.hzOut - 1.676) < 0.03, s0.hzIn.toFixed(2) + '-' + s0.hzOut.toFixed(2));
+  ok('sun life: Earth leaves the habitable zone ~+1.1 Gyr (inner edge reaches 1 AU)', mid2.hzIn > 0.995 && mid2.hzIn < 1.01, mid2.hzIn.toFixed(3));
+  ok('sun life: RGB tip +7.59 Gyr, 256 Rsun, 2730 Lsun, 0.67 Msun (Schroder & Smith 2008)', Math.abs(tip.t - 7.59) < 0.01 && Math.abs(tip.R - 256) < 1 && Math.abs(tip.L - 2730) < 10 && Math.abs(tip.M - 0.67) < 0.01, tip.t.toFixed(3));
+  ok('sun life: white dwarf ~0.54 Msun, Earth-sized, hot then cooling', wd.M === 0.54 && wd.R < 0.02 && wd.phase[2] === 'White dwarf' && wd.T > 8000, wd.T.toFixed(0) + ' K');
+  const lost = {}; for (const [id, a, , f] of X.LIFE_PLANETS) { lost[id] = false; for (let u = 0; u <= 1; u += 0.0005) { const q = X.lifeState(u); if (q.RAU >= a / q.M * f) { lost[id] = true; break; } } }
+  ok('sun life: Mercury, Venus (and, with tidal drag, Earth) are swallowed; Mars and beyond survive', lost.Mercury && lost.Venus && lost.Earth && !lost.Mars && !lost.Jupiter, JSON.stringify(lost));
+  let mono = true; for (let t = -4.5; t < 12; t += 0.25) if (!(X.lifeUofT(t + 0.25) >= X.lifeUofT(t))) mono = false;
+  ok('sun life: dock-strip axis is monotonic', mono);
+  const c = X.bbColor(5772), cb = X.bbColor(100000); ok('sun life: blackbody colours (Sun warm-white, hot WD blue)', c[0] > 0.95 && c[2] > 0.8 && cb[2] > cb[0], c.map(v => v.toFixed(2)).join(','));
 }
 console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); process.exit(fail ? 1 : 0);

@@ -172,9 +172,34 @@ body.guide.min #gdText,body.guide.min #gdTips{display:none}
   #skyBar,#hxBar,#galBar{bottom:calc(var(--dock) + 8px)}#skyBar{border-radius:14px;flex-wrap:wrap;justify-content:center}
   #skyInfo .a{font-size:18px}#galInfo{display:none!important}#banner #bannerTxt{display:none}#hxNote{display:none}
   #guide{left:8px;right:8px;width:auto;bottom:calc(var(--dock) + 8px);max-height:34vh;padding:8px 10px}
-  body.guide:not(.min) #skyBar,body.guide:not(.min) #hxBar,body.guide:not(.min) #galBar{bottom:calc(var(--dock) + 8px + var(--gdh,0px) + 8px)}
+  body.guide #skyBar,body.guide #hxBar,body.guide #galBar,body.guide #lifeBar{bottom:calc(var(--dock) + 8px + var(--gdh,0px))}
+  body.guide #mgBar{bottom:calc(var(--dock) + 8px + var(--gdh,0px) + 46px)}
   #tt{max-width:76vw}
   body.cmp #cmpCap{font-size:10.5px;top:calc(var(--top) + 40px)}#cmpCap span{padding:3px 8px}
   #toast{bottom:calc(var(--dock) + 14px)}
 }
 @media (max-width:420px){.search input{font-size:12.5px}#galBar .seg button{padding:5px 8px;font-size:11px}}
+
+/* ---------- v1.5: collision, Sun's life, navigation tools, compare divider ---------- */
+#mgBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock) + 56px);z-index:12;display:none;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 10px;backdrop-filter:blur(10px);max-width:96vw}
+body.mg #mgBar{display:flex}
+#mgProg{position:fixed;left:50%;top:44%;transform:translateX(-50%);z-index:30;display:none;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;padding:14px 18px;min-width:260px;text-align:center;backdrop-filter:blur(14px)}#mgProg .bar{height:6px;margin:0 0 8px}#mgProg .bar i{width:0}#mgProg small{color:var(--dim)}
+#lifeInfo{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--top) + 14px);z-index:11;display:none;text-align:center;pointer-events:none;text-shadow:0 0 10px #000;max-width:min(900px,94vw)}
+#lifeInfo .a{font-size:22px;font-weight:650}#lifeInfo .b{color:#d5dff5;font-size:12.5px;margin-top:3px;line-height:1.55}#lifeInfo .b b{color:#ffe3bb}
+#lifeBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock) + 10px);z-index:12;display:none;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 10px;backdrop-filter:blur(10px);max-width:96vw}
+body.life #lifeBar,body.life #lifeInfo{display:flex}body.life #lifeInfo{display:block}
+#lifeBar .seg.scroll{overflow-x:auto;scrollbar-width:none;max-width:78vw}
+#navTools{position:fixed;right:12px;bottom:calc(var(--dock) + 10px);z-index:13;display:flex;gap:6px}
+#navTools .ibtn{background:var(--panel);backdrop-filter:blur(10px)}
+body[data-view=sky] #navTools #btnPan,body[data-view=sky] #navTools #btnLife,body[data-view=sky] #navTools #btnRecenter{display:none}
+#btnLife{display:none}body[data-view=system]:not(.life) #btnLife{display:inline-block}
+body.panmode #canvasHint{display:block}
+body.panmode #gl{cursor:move}
+#cmpDiv{position:fixed;top:var(--top);bottom:var(--dock);width:26px;margin-left:-13px;left:50%;z-index:12;display:none;cursor:ew-resize;touch-action:none}
+#cmpDiv::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:2px;background:rgba(255,255,255,.55)}
+#cmpDiv i{position:absolute;left:0;top:50%;transform:translateY(-50%);width:26px;height:44px;border-radius:13px;background:#0b1224;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-style:normal;color:#cfd8ea;font-size:13px}
+body.cmp #cmpDiv{display:block}body.cmp::after{display:none}
+.lbl.hubble{pointer-events:auto;cursor:pointer;text-decoration:underline dotted}
+@media (max-width:900px){#navTools{right:8px;bottom:auto;top:calc(var(--top) + 8px);flex-direction:column}#navTools .ibtn{padding:0}#mgBar{bottom:calc(var(--dock) + 48px)}#lifeInfo .a{font-size:17px}#lifeInfo .b{font-size:11px}}
+@media (min-width:901px){#pRight{bottom:calc(var(--dock) + var(--gdh,0px) + 56px)}}
+body.life .panel{display:none}

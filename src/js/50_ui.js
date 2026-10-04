@@ -56,13 +56,14 @@ function wire_picker() {
   };
   mk($('stepsBack'), -1); mk($('stepsFwd'), 1);
   // ONE transport for every view: in the Galaxy view the same buttons drive galactic time
-  $('btnNow').addEventListener('click', () => { if (S.view === 'galaxy') { GV.gt = 0; GV.playing = false; syncGalUI(); } else goLive(); });
+  $('btnNow').addEventListener('click', () => { if (S.view === 'galaxy') stripSet(0); else if (LIFE.on) stripSet(0.17); else goLive(); });
   $('btnNow2').addEventListener('click', () => { goLive(); closePops(); });
   $('bannerNow').addEventListener('click', goLive);
-  $('spdSel').addEventListener('change', e => { if (S.view === 'galaxy') { GV.speed = (GV.speed < 0 ? -1 : 1) * +e.target.value; syncPlayUI(); } else setSpeed(+e.target.value); });
+  $('spdSel').addEventListener('change', e => { if (S.view === 'system' && LIFE.on) { LIFE.speed = (LIFE.speed < 0 ? -1 : 1) * +e.target.value; syncPlayUI(); } else if (S.view === 'galaxy') { GV.speed = (GV.speed < 0 ? -1 : 1) * +e.target.value; syncPlayUI(); } else setSpeed(+e.target.value); });
   $('btnPlay').addEventListener('click', togglePlay);
   $('btnRev').addEventListener('click', () => {
     if (S.view === 'galaxy') { GV.speed = -GV.speed; if (!GV.playing) GV.playing = true; syncPlayUI(); return; }
+    if (S.view === 'system' && LIFE.on) { LIFE.speed = -LIFE.speed; if (!LIFE.playing) LIFE.playing = true; syncPlayUI(); return; }
     S.dir = -S.dir; if (S.live) { S.live = false; S.playing = true; } syncPlayUI(); uiTimeChanged();
   });
 }
@@ -499,18 +500,20 @@ function drawTimeline() {
 function wire_timeline() {
   const wrap = $('tlwrap'); let d = null;
   const galHover = e => {
-    const t = galStripAt(e.clientX); let txt = (Math.abs(t) < 3 ? 'now' : t < 0 ? Math.abs(t).toFixed(0) + ' Myr ago' : '+' + t.toFixed(0) + ' Myr');
-    const s = (GV.cross || []).find(q => t >= q.t0 && t <= q.t1); if (s) txt += ` · inside the ${ARMS[s.arm].name}`;
-    const me = MASS_EXT.find(m => Math.abs(-m[0] - t) < 8); if (me) txt += ` · ${me[1]} extinction`;
+    const t = galStripAt(e.clientX); let txt;
+    if (S.view === 'system') txt = lifeHoverText(t); else if (GV.merge) txt = mgHoverText(t); else {
+      txt = (Math.abs(t) < 3 ? 'now' : t < 0 ? Math.abs(t).toFixed(0) + ' Myr ago' : '+' + t.toFixed(0) + ' Myr');
+      const s = (GV.cross || []).find(q => t >= q.t0 && t <= q.t1); if (s) txt += ` · inside the ${ARMS[s.arm].name}`;
+      const me = MASS_EXT.find(m => Math.abs(-m[0] - t) < 8); if (me) txt += ` · ${me[1]} extinction`; }
     TL.galHover = txt; TL.galHoverX = e.clientX - wrap.getBoundingClientRect().left;
   };
   wrap.addEventListener('pointerdown', e => {
     wrap.setPointerCapture(e.pointerId); tourCancel();
-    if (S.view === 'galaxy') { d = { gal: true }; GV.gt = galStripAt(e.clientX); GV.playing = false; syncGalUI(); return; }
+    if (stripMode()) { d = { gal: true }; stripSet(galStripAt(e.clientX)); return; }
     d = { x: e.clientX, moved: 0, t: S.t };
   });
   wrap.addEventListener('pointermove', e => {
-    if (S.view === 'galaxy') { galHover(e); if (d && d.gal) { GV.gt = galStripAt(e.clientX); GV.playing = false; syncGalUI(); } return; }
+    if (stripMode()) { galHover(e); if (d && d.gal) stripSet(galStripAt(e.clientX)); return; }
     if (d && d.gal) return;
     const r = wrap.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (d) { const dx = e.clientX - d.x; d.moved = Math.max(d.moved, Math.abs(dx)); if (d.moved > 3) { const wasPlaying = S.playing; setTime(clampTime(d.t - dx / r.width * TL.span), { keepPlaying: false }); S.playing = false; syncPlayUI(); } return; }
@@ -521,8 +524,8 @@ function wire_timeline() {
     d = null;
   });
   wrap.addEventListener('pointerleave', () => { TL.hover = null; TL.galHoverX = null; });
-  wrap.addEventListener('wheel', e => { e.preventDefault(); if (S.view === 'galaxy') { GV.gt = clamp(GV.gt + e.deltaY * 0.4, -GT_MAX, GT_MAX); GV.playing = false; syncGalUI(); return; } TL.span = clamp(TL.span * Math.exp(clamp(e.deltaY, -250, 250) * 0.0016), TL_MIN, TL_MAX); tlEnsure(); }, { passive: false });
-  wrap.addEventListener('dblclick', () => { if (S.view === 'galaxy') { GV.gt = 0; syncGalUI(); return; } TL.span = 30 * MS_DAY; tlEnsure(); });
+  wrap.addEventListener('wheel', e => { e.preventDefault(); if (stripMode()) { if (S.view === 'system') stripSet(clamp(LIFE.u + e.deltaY * 0.0006, 0, 1)); else if (GV.merge) stripSet(clamp(GV.mt + e.deltaY * 8, 0, GV.mtMax)); else stripSet(clamp(GV.gt + e.deltaY * 0.4, -GT_MAX, GT_MAX)); return; } TL.span = clamp(TL.span * Math.exp(clamp(e.deltaY, -250, 250) * 0.0016), TL_MIN, TL_MAX); tlEnsure(); }, { passive: false });
+  wrap.addEventListener('dblclick', () => { if (stripMode()) { stripSet(S.view === 'system' ? 0.17 : 0); return; } TL.span = 30 * MS_DAY; tlEnsure(); });
 }
 
 // ===== toggles / views / misc =====
@@ -603,7 +606,7 @@ function uiTick(now) {
     $('badge').className = 'badge ' + (S.live ? 'live' : 'tt'); $('badge').textContent = S.live ? 'LIVE' : (S.playing ? 'TIME TRAVEL ▶' : 'TIME TRAVEL');    const b = $('banner'); b.style.display = S.live ? 'none' : 'flex'; $('bannerTxt').textContent = `${fmtNice(S.t, zone)} ${zone.split('/').pop().replace(/_/g, ' ')} · ${fmtUTC(S.t)} UTC`;
     const rs = rangeStatus(S.t), rw = $('rangeWarn'); rw.style.display = rs === 'reduced' ? 'block' : 'none';
     if (rs === 'reduced') rw.textContent = `Reduced accuracy: ${S.t < RANGE.accMin ? 'before 1700' : 'after 2200'} CE the ephemeris drifts (arcminutes → degrees); eclipse timing is approximate.`;
-    $('btnNow').classList.toggle('on', S.view === 'galaxy' ? GV.gt === 0 : S.live);
+    $('btnNow').classList.toggle('on', S.view === 'galaxy' ? (GV.merge ? GV.mt === 0 : GV.gt === 0) : S.live);
     if (document.activeElement && !['tmDate', 'tmTime', 'tmISO'].includes(document.activeElement.id)) syncPicker(false); else if (!document.activeElement || document.activeElement === document.body) syncPicker(false);
     if (S.playing) syncPicker(false);
   }
@@ -625,9 +628,10 @@ function uiTick(now) {
       if (S.live && now - (U.wxLive || 0) > 600000) { U.wxLive = now; U.wxKey = ''; refreshWeather(true); }
     } catch (e) { console.error('panel update', e); }
   }
-  const d0 = performance.now(); if (S.view === 'galaxy') drawGalStrip(); else { drawTimeline(); tlEnsure(); } const PP = (window.__parts = window.__parts || {}); acc(PP, 'tl', performance.now() - d0);
+  const d0 = performance.now(); if (S.view === 'galaxy') drawGalStrip(); else if (S.view === 'system' && LIFE.on) drawLifeStrip(); else { drawTimeline(); tlEnsure(); } const PP = (window.__parts = window.__parts || {}); acc(PP, 'tl', performance.now() - d0);
   if (S.view === 'sky') { if (now - (U.skyT || 0) > 150) { U.skyT = now; renderSkyInfo(); } }
   if (S.view === 'galaxy' && now - (U.galT || 0) > 90) { U.galT = now; renderGalInfo(); }
+  if (S.view === 'system' && LIFE.on && now - (U.lifeT || 0) > 90) { U.lifeT = now; lifeHud(); syncPlayUI(); }
   if (now - (U.hashPoll || 0) > 1500) { U.hashPoll = now; if (S.view === 'sky' || ptrs.size) scheduleHash(); }
   window.__fps = FPS;
 }
@@ -657,6 +661,7 @@ function syncGalUI() {
 function renderGalInfo() {
   const s = GV.sun; if (!s) return; syncGalUI();
   const sc = scaleOfGalaxy();
+  if (sc === 'merge') { const i = MG.info || {}; $('galA').textContent = 'Milky Way + Andromeda · ' + (GV.mt < 50 ? 'today' : '+' + (GV.mt / 1000).toFixed(2) + ' billion years'); $('galB').innerHTML = MG.ready ? `${i.phase || ''}<br>${(i.sep || 0) * LY_PER_KPC < 6000 ? 'Centres merged' : 'Centres ' + fmtBig((i.sep || 0) * LY_PER_KPC / 1000, 0) + 'k light-years apart'}${i.catching ? ' · catching up…' : ''}` : 'Simulating…'; return; }
   if (sc !== 'mw') { $('galA').textContent = { sun: 'Zooming into the Sun…', near: 'Our stellar neighbourhood · real Gaia stars', sat: 'The Milky Way’s neighbours', lg: 'The Local Group', lan: 'Laniakea — our home supercluster' }[sc]; $('galB').textContent = ''; return; }
   const dir = s.y >= 0 ? 'above' : 'below', gt = GV.gt, era = gt > -66 ? 'Cenozoic Era (the age of mammals)' : gt > -252 ? 'Mesozoic Era (dinosaurs)' : gt > -541 ? 'Paleozoic Era' : 'Precambrian';
   $('galA').textContent = gt === 0 ? 'Our place in the Milky Way — right now' : `The Sun ${gt < 0 ? Math.abs(gt).toFixed(0) + ' million years ago' : gt.toFixed(0) + ' million years from now'}`;
@@ -679,6 +684,7 @@ const ARM_COL = ['#7cc4ff', '#ffd27a', '#ff8fa8', '#a6f0a0'];
 // In the Galaxy view the dock timeline becomes the galactic-time strip (\u00b1650 Myr): arm crossings, mass extinctions, a draggable cursor.
 function drawGalStrip() {
   if (!GV.ready) return;
+  if (GV.merge) { drawMergeStrip(); return; }
   if (GV.crossOmega !== GV.omega) { GV.cross = armCrossings(GV.omega); GV.crossOmega = GV.omega; }
   const { w, h, dpr } = tlSizing(); if (!w) return; TL.lastKey = null;
   const g = TL.canvas.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
@@ -694,7 +700,9 @@ function drawGalStrip() {
   g.fillStyle = '#ffb454'; g.beginPath(); g.moveTo(X(GV.gt) - 5, 0); g.lineTo(X(GV.gt) + 5, 0); g.lineTo(X(GV.gt), 7); g.fill();
   if (TL.galHoverX != null && TL.galHover) { const tw = g.measureText(TL.galHover).width + 14, tx = Math.min(w - tw - 4, Math.max(4, TL.galHoverX - tw / 2)); g.fillStyle = 'rgba(8,12,22,.92)'; g.fillRect(tx, bandY + bandH + 3, tw, 18); g.strokeStyle = '#fff3'; g.strokeRect(tx + .5, bandY + bandH + 3.5, tw, 18); g.fillStyle = '#e9eef8'; g.fillText(TL.galHover, tx + 7, bandY + bandH + 16); }
 }
-function galStripAt(clientX) { const r = $('tlwrap').getBoundingClientRect(); return clamp(((clientX - r.left) / r.width * 2 - 1) * GT_MAX, -GT_MAX, GT_MAX); }
+const stripMode = () => S.view === 'galaxy' || (S.view === 'system' && LIFE.on);
+function galStripAt(clientX) { const r = $('tlwrap').getBoundingClientRect(); if (S.view === 'system') return clamp((clientX - r.left) / r.width, 0, 1); if (GV.merge) return clamp((clientX - r.left) / r.width * GV.mtMax, 0, GV.mtMax); return clamp(((clientX - r.left) / r.width * 2 - 1) * GT_MAX, -GT_MAX, GT_MAX); }
+function stripSet(v) { if (S.view === 'system') { LIFE.u = v; LIFE.playing = false; syncPlayUI(); return; } if (GV.merge) { GV.mt = v; MG.auto = true; } else GV.gt = v; GV.playing = false; syncGalUI(); }
 function wire_galaxy() {
   $('gScales').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { galScaleTo(b.dataset.s); }));
   $('gArt').addEventListener('click', () => { GV.art = !GV.art; syncGalUI(); });
@@ -704,6 +712,7 @@ function wire_galaxy() {
   $('gFollow').addEventListener('click', () => { GV.follow = !GV.follow; syncGalUI(); if (GV.follow) { const sp = galSunPos(GV.gt); galFly({ yaw: GV.yaw, pitch: GV.pitch, dist: 3, tx: sp.x, ty: sp.y, tz: sp.z, dur: 1800 }); } else galFly({ yaw: GV.yaw, pitch: 0.95, dist: 38, tx: 0, ty: 0, tz: 0, dur: 1800 }); });
   $('gDs').addEventListener('input', e => { GV.dscale = +e.target.value / 100; syncGalUI(); });
   $('gVex').addEventListener('input', e => { GV.vex = +e.target.value; syncGalUI(); });
+  $('gCmp').addEventListener('click', () => setCompare(!S.cmp));
   $('gTop').addEventListener('click', () => galFly({ yaw: GV.yaw, pitch: 1.5, dist: GV.dist, tx: GV.follow ? GV.tx : 0, ty: GV.follow ? GV.ty : 0, tz: GV.follow ? GV.tz : 0, dur: 1200 }));
   $('gEdge').addEventListener('click', () => galFly({ yaw: GV.yaw, pitch: 0.04, dist: GV.drift ? 135 : Math.min(GV.dist, 30), tx: GV.follow ? GV.tx : 0, ty: GV.follow ? GV.ty : 0, tz: GV.follow ? GV.tz : 0, dur: 1200 }));
 }
@@ -721,15 +730,43 @@ function wire_keys() {
     else if (k === 'r' || k === 'R') $('btnRev').click();
     else if (k === '1') setView('system'); else if (k === '2') setView('earthmoon'); else if (k === '3') setView('planet'); else if (k === '4') setView('sky', { reaim: true }); else if (k === '5') setView('galaxy');
     else if (k === 'g' || k === 'G' || k === '?') $('btnGuide').click();
+    else if (k === 'a' || k === 'A') panBy(40, 0); else if (k === 'd' || k === 'D') panBy(-40, 0); else if (k === 'w' || k === 'W') panBy(0, 40); else if (k === 's' || k === 'S') panBy(0, -40);
+    else if (k === 'c' || k === 'C') recenterView(); else if (k === 'm' || k === 'M') setPanMode(!NAV.pan);
     else if (k === 'Escape') { document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')); closePops(); tourCancel(); }
   });
 }
 
+// ===== navigation tools, collision bar, Sun's life, compare divider =====
+function wire_nav() {
+  $('btnPan').addEventListener('click', () => setPanMode(!NAV.pan)); $('btnRecenter').addEventListener('click', recenterView);
+  $('btnLife').addEventListener('click', () => { closePops(); setLife(true); });
+  for (const id of ['mgToday', 'mgFirst', 'mgSecond', 'mgMerged', 'mgFinal']) $(id).addEventListener('click', () => { if (MG.ready) mgGoto(+$(id).dataset.t || 0); });
+  $('mgAuto').addEventListener('click', () => { MG.auto = !MG.auto; mgSyncUI(); });
+  // draggable compare divider (system + galaxy compare)
+  const dv = $('cmpDiv'); let dragging = false;
+  dv.addEventListener('pointerdown', e => { dragging = true; dv.setPointerCapture(e.pointerId); e.stopPropagation(); });
+  dv.addEventListener('pointermove', e => { if (!dragging) return; S.cmpX = clamp(e.clientX / innerWidth, 0.12, 0.88); dv.style.left = (S.cmpX * 100) + '%'; });
+  dv.addEventListener('pointerup', () => { dragging = false; });
+  // Hubble galaxy cards: click a purple label in the Galaxies view
+  $('labels').addEventListener('click', e => { const el = e.target.closest('.lbl.hubble'); if (el && el.dataset.hub) openHubble(+el.dataset.hub); });
+}
+const HUBBLE_CARDS = [
+  { tex: 'gal2', name: 'Whirlpool Galaxy (M51)', facts: 'A grand-design spiral ~28 million light-years away in Canes Venatici, interacting with its small companion NGC 5195. Its tidy arms are traced by star formation triggered by that encounter.' },
+  { tex: 'gal4', name: 'Sombrero Galaxy (M104)', facts: 'A spiral seen almost edge-on ~31 million light-years away in Virgo, with a huge central bulge and a prominent dark dust lane. Its bright core hosts a ~1-billion-solar-mass black hole.' },
+  { tex: 'gal1', name: 'NGC 4414', facts: 'A flocculent spiral ~58 million light-years away in Coma Berenices. Hubble used it to measure distances to Cepheid stars, helping pin down the expansion rate of the Universe.' },
+  { tex: 'gal3', name: 'NGC 1300', facts: 'A barred spiral ~61 million light-years away in Eridanus. A strong central bar funnels gas inward; a tiny grand-design spiral sits inside the bar, around its core.' },
+  { tex: 'gal5', name: 'Antennae Galaxies (NGC 4038/4039)', facts: 'Two galaxies colliding ~72 million light-years away in Corvus — a preview of what the Milky Way and Andromeda will do. The merger triggers bursts of star formation and long tidal tails like “antennae”.' },
+];
+function openHubble(i) {
+  const c = HUBBLE_CARDS[i]; if (!c) return; $('hbTitle').textContent = c.name; $('hbText').textContent = c.facts;
+  const cv = $('hbImg'), im = new Image(); im.onload = () => { cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); }; im.src = TEX[c.tex];
+  $('mHubble').classList.add('open');
+}
 // ===== boot =====
 async function bootUI() {
   const tb = $('topbar'), setTop = () => document.documentElement.style.setProperty('--top', Math.round(tb.getBoundingClientRect().bottom) + 'px');
   new ResizeObserver(setTop).observe(tb); setTop();
   const dk = $('dock'), setDock = () => document.documentElement.style.setProperty('--dock', Math.round(dk.getBoundingClientRect().height) + 'px'); new ResizeObserver(setDock).observe(dk); setDock();
-  wire_galaxy(); wire_helix(); wire_picker(); wire_pops(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys(); wire_guide();
+  wire_galaxy(); wire_helix(); wire_picker(); wire_pops(); wire_events(); wire_search(); wire_toggles(); wire_timeline(); wire_keys(); wire_guide(); wire_nav(); lifeBarSetup(); mgSyncUI();
   markView(); syncPlayUI(); syncGalUI();
 }

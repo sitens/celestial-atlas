@@ -37,6 +37,17 @@ function buildFar() {
     for (let i = 0; i < n; i++) { const o = i * 8, x = dv.getInt16(o, true) * 1e-4, y = dv.getInt16(o + 2, true) * 1e-4, z = dv.getInt16(o + 4, true) * 1e-4, g = u8[o + 6] / 10, c = u8[o + 7] / 50 - 0.6, rgb = bpRpColor(c);
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; const br = Math.min(1, 0.45 + (10.5 - g) * 0.18); col[i * 3] = rgb[0] * br; col[i * 3 + 1] = rgb[1] * br; col[i * 3 + 2] = rgb[2] * br; size[i] = 1.1 + Math.max(0, 9.5 - g) * 0.38; }
     FAR.gaia = cloudPoints({ pos, col, size, n }, 1.6, 0.9); FAR.gaia.renderOrder = 5; FAR.near.add(FAR.gaia); }
+  // a denser Gaia sample inside 100 pc (1-in-4 of every star with a good parallax), revealed as you zoom in
+  { const bin = atob(GAIA100.b64), n = GAIA100.n, u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const dv = new DataView(u8.buffer), pos = new Float32Array(n * 3), col = new Float32Array(n * 3), size = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const o = i * 8, g = u8[o + 6] / 10, c = u8[o + 7] / 50 - 0.6, rgb = bpRpColor(c);
+      pos[i * 3] = dv.getInt16(o, true) * 1e-4; pos[i * 3 + 1] = dv.getInt16(o + 2, true) * 1e-4; pos[i * 3 + 2] = dv.getInt16(o + 4, true) * 1e-4;
+      const br = Math.min(1, 0.35 + Math.max(0, 15 - g) * 0.07); col[i * 3] = rgb[0] * br; col[i * 3 + 1] = rgb[1] * br; col[i * 3 + 2] = rgb[2] * br; size[i] = 0.9 + Math.max(0, 12 - g) * 0.22; }
+    FAR.gaia100 = cloudPoints({ pos, col, size, n }, 1.6, 0.8); FAR.gaia100.renderOrder = 5; FAR.near.add(FAR.gaia100); }
+  // the Gould Belt: a tilted ring of young stars and star-forming clouds ~ 700 pc across (schematic ellipse after Poppel 1997)
+  { const C = [0.104 * Math.cos(130 * DEG), 0.104 * Math.sin(130 * DEG), 0], a = 0.36, b = 0.22, node = 95 * DEG, tilt = 18 * DEG, e1 = [Math.cos(node), Math.sin(node), 0], e2 = [-Math.sin(node) * Math.cos(tilt), Math.cos(node) * Math.cos(tilt), Math.sin(tilt)], pts = [];
+    for (let i = 0; i <= 160; i++) { const t = i / 160 * 6.2832, x = a * Math.cos(t), y = b * Math.sin(t), f = galToFrame(C[0] + e1[0] * x + e2[0] * y, C[1] + e1[1] * x + e2[1] * y, C[2] + e1[2] * x + e2[2] * y); pts.push(new THREE.Vector3(f[0], f[1], f[2])); }
+    FAR.gould = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x5fe0c0, transparent: true, opacity: 0.45, depthWrite: false })); FAR.gould.frustumCulled = false; FAR.near.add(FAR.gould); FAR.gouldLab = pts[40]; }
   galScene.add(FAR.near); FAR.nearLabels = [];
   for (const r of NEAR_STARS) if (r[4] < 5.5 || Math.hypot(r[1], r[2], r[3]) < 9) FAR.nearLabels.push({ n: r[0], p: new THREE.Vector3(r[1] / 1000, r[2] / 1000, r[3] / 1000), d: Math.hypot(r[1], r[2], r[3]) });
   FAR.clusters = [['Hyades', 180.1, -22.4, 47], ['Pleiades', 166.6, -23.5, 136], ['Taurus clouds', 172, -15, 140], ['Ophiuchus clouds', 353, 17, 140], ['Scorpius–Centaurus assoc.', 330, 15, 130], ['Alpha Persei cluster', 147, -6.5, 175], ['Praesepe (Beehive)', 205.9, 32.5, 187], ['Orion Nebula (M42)', 209, -19.4, 412]].map(c => ({ n: c[0], p: new THREE.Vector3(...lbToXYZ(c[1], c[2], c[3] / 1000)) }));
@@ -112,6 +123,9 @@ function updateFar(dist, on, sunPos) {
   const gaiaA = 1 - sm(2, 14, dist); FAR.near.visible = dist < 60;
   FAR.near.position.copy(sunPos);
   FAR.gaia.material.uniforms.uAlpha.value = (GV.gaia ? 0.95 : 0) * gaiaA; FAR.gaia.material.uniforms.uK.value = dist < 0.2 ? 2.4 : dist < 1.5 ? 1.8 : 1.3;
+  FAR.gaia100.material.uniforms.uAlpha.value = (GV.gaia ? 0.85 : 0) * (1 - sm(0.10, 0.5, dist)); FAR.gaia100.material.uniforms.uK.value = dist < 0.08 ? 2.6 : dist < 0.3 ? 2.0 : 1.5; FAR.gaia100.visible = dist < 0.7;
+  FAR.gould.visible = dist > 0.12 && dist < 6; FAR.gould.material.opacity = 0.5 * (1 - sm(2, 6, dist)) * sm(0.12, 0.4, dist);
+  lab('gould', 'Gould Belt · a ring of young stars ~2,300 ly across (schematic)', 'arm', FAR.near.localToWorld(FAR.gouldLab.clone()), 6, -4, on && dist > 0.25 && dist < 4);
   for (const r of FAR.rings) r.ln.material.opacity = 0.4 * (dist < 4 ? 1 - sm(1.2, 4, dist) : 0);
   const showN = on && dist < 3;
   for (const s of FAR.nearLabels) { const show = showN && s.d < (dist < 0.05 ? 12 : dist < 0.15 ? 8 : 5); lab('ns' + s.n, `${s.n} · ${(s.d * 3.2616).toFixed(1)} ly`, 'star', FAR.near.localToWorld(s.p.clone()), 6, -4, show); }
@@ -144,7 +158,7 @@ function updateFar(dist, on, sunPos) {
     bp.needsUpdate = true; bc.needsUpdate = true;
   }
   { const hv = on && dist > 3000 && dist < 1.3e5, hs = Math.max(120, dist * 0.012);
-    for (const h of FAR.hubble) { h.sp.visible = hv; h.sp.scale.setScalar(hs); lab('hub' + h.n, `${h.n} · ${(h.d * 3.2616).toFixed(0)} Mly`, 'hubble', h.pos, 8, -4, hv); } }
+    FAR.hubble.forEach((h, hi) => { h.sp.visible = hv; h.sp.scale.setScalar(hs); lab('hub' + h.n, `${h.n} · ${(h.d * 3.2616).toFixed(0)} Mly`, 'hubble', h.pos, 8, -4, hv); galLabel('hub' + h.n).dataset.hub = hi; }); }
   for (const nd of FAR.nodes) lab('lan' + nd.o.n, nd.o.n + (nd.o.outside ? ' (outside Laniakea)' : ''), nd.o.ga ? 'sun' : 'lan', nd.pos, 8, -4, on && lanVis > 0.4 && dist > 4e4);
   lab('lanname', `Laniakea Supercluster · ~${LANIAKEA_INFO.diameterMpc} Mpc across · ~${LANIAKEA_INFO.galaxies.toLocaleString('en-US')} galaxies`, 'gc', FAR.center.clone().add(new THREE.Vector3(0, 82 * KPC_MPC, 0)), -120, -10, on && lanVis > 0.4);
 }
@@ -154,11 +168,14 @@ const GV_SCALES = {
   mw: () => ({ pitch: 0.98, dist: 38, tx: 0, ty: 0, tz: 0, follow: false }),
   sat: () => ({ pitch: 0.8, dist: 150, tx: 0, ty: 0, tz: 0, follow: false }),
   lg: () => { buildFar(); const m = FAR.m31; return { pitch: 0.9, yaw: m ? Math.atan2(-m.z, m.x) : 0, dist: 1350, tx: m ? m.x * 0.5 : 0, ty: m ? m.y * 0.5 : 0, tz: m ? m.z * 0.5 : 0, follow: false }; },
+  merge: () => ({ pitch: 0.62, dist: 1900, tx: 0, ty: 0, tz: 0, follow: false }),
   hub: () => { buildFar(); const c = new THREE.Vector3(); for (const h of FAR.hubble) c.add(h.pos); c.multiplyScalar(0.55 / FAR.hubble.length); return { pitch: 0.7, dist: 4e4, tx: c.x, ty: c.y, tz: c.z, follow: false }; },
   lan: () => { buildFar(); const c = FAR.center; return { pitch: 0.5, dist: 2.4e5, tx: c.x * 0.45, ty: c.y * 0.45, tz: c.z * 0.45, follow: false }; },
 };
 function galScaleTo(name, dur) {
   if (!GV.ready) buildGalaxy();
+  if (name === 'merge') { GV.scaleName = 'merge'; if (!GV.merge) enterMerge(); syncGalUI(); return; }
+  if (GV.merge) exitMerge();
   const sc = GV_SCALES[name](), follow = !!sc.follow; delete sc.follow;
   GV.follow = follow; if (follow) { const sp = galSunPos(GV.gt); sc.tx = sp.x; sc.ty = sp.y; sc.tz = sp.z; }
   GV.scaleName = name; syncGalUI(); galFly(Object.assign({ yaw: GV.yaw, dur: dur || 3200 }, sc));

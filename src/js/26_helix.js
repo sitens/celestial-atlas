@@ -103,9 +103,16 @@ function hxFrame() { // camera that sees the corkscrews side-on, Sun leading to 
 }
 // side-by-side explainer: left = textbook flat view (Sun at rest), right = the same moment with the Sun's real motion drawn as helices
 function setCompare(on) {
-  on = !!on && HX.on && S.view === 'system'; S.cmp = on;
-  document.body.classList.toggle('cmp', on); const b = $('hxCmp'); if (b) { b.classList.toggle('on', on); b.textContent = on ? '✕ End comparison' : '⇄ Compare with flat view'; }
-  if (!on) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+  const okSys = S.view === 'system' && HX.on && !LIFE.on, okGal = S.view === 'galaxy' && !GV.merge;
+  on = !!on && (okSys || okGal); S.cmp = on; S.cmpView = on ? S.view : null;
+  document.body.classList.toggle('cmp', on); if (S.cmpX == null) S.cmpX = 0.5; $('cmpDiv').style.left = (S.cmpX * 100) + '%';
+  for (const id of ['hxCmp', 'gCmp']) { const b = $(id); if (b) { b.classList.toggle('on', on); b.textContent = on ? '✕ End comparison' : '⇄ Compare ' + (id === 'gCmp' ? 'flat vs helix' : 'with flat view'); } }
+  if (on) {
+    const gal = S.view === 'galaxy';
+    $('cmpL').textContent = gal ? 'Flat view · the Galaxy stands still; the Sun simply circles it' : 'Flat view · the Sun stands still (the textbook picture)';
+    $('cmpR').textContent = gal ? `Real motion · the Galaxy itself drifts ≈ ${galDrift ? galDrift.speed.toFixed(0) : 560} km/s, so the Sun’s path is a helix` : 'Real motion · the Sun carries the system at 246 km/s';
+    if (gal) { GV.follow = false; GV.drift = false; galFly({ yaw: helixYaw(), pitch: 0.4, dist: 150, tx: 0, ty: 0, tz: 0, dur: 1600 }); if (!GV.playing) { GV.playing = true; GV.speed = Math.abs(GV.speed) || 60; } syncPlayUI(); }
+  } else { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); galCam.aspect = innerWidth / innerHeight; galCam.updateProjectionMatrix(); if (S.view === 'galaxy' && GV.ready) galApplyPath(); }
   if (typeof setGuide === 'function' && document.body.classList.contains('guide')) { if (on) { setCompare.wasMin = document.body.classList.contains('min'); setGuide(true, true); } else if (setCompare.wasMin === false) { setGuide(true, false); setCompare.wasMin = null; } }
 }
 function setHelix(on, opts = {}) {

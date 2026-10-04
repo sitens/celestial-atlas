@@ -113,11 +113,8 @@ function enterGalaxy(opts = {}) {
     toast('Zooming out: the Sun is one star in the Orion Spur, 26,700 light-years from the Milky Way\'s centre.', 6000);
   }
 }
-function updateGalaxy(dt, now) {
-  if (!GV.ready) buildGalaxy();
-  if (GV.playing) { GV.gt += GV.speed * dt; if (GV.gt > GT_MAX) { GV.gt = GT_MAX; GV.playing = false; syncGalUI(); } if (GV.gt < -GT_MAX) { GV.gt = -GT_MAX; GV.playing = false; syncGalUI(); } }
-  galPathBuild(); GV.glow.material.opacity = GV.art ? 0.22 : 0.9;
-  FAR.rot.rotation.y = -GV.omega * GM.kms * GV.gt; FAR.rot.updateMatrixWorld(true);
+function galApplyPath() { // everything that depends on GV.drift: the path, beads, marker and ghost discs (also re-run per half in compare mode)
+  galPathBuild();
   const s = sunAt(GV.gt), D = GVD(), sp = new THREE.Vector3(s.x, s.y * GV.vex, s.z);
   galPath.position.set(GV.drift ? -D[0] * GV.gt : 0, GV.drift ? -D[1] * GV.gt : 0, GV.drift ? -D[2] * GV.gt : 0); galDots.position.copy(galPath.position);
   // beads: the recent past and near future of the path
@@ -134,6 +131,15 @@ function updateGalaxy(dt, now) {
     const k = i - 4, vis = GV.drift && k !== 0; galGhost[i].visible = GV.drift;
     const dd = k * 120; galGhost[i].position.set(D[0] * dd, D[1] * dd, D[2] * dd); galGhost[i].material.opacity = k === 0 ? 0 : Math.max(0.05, 0.22 - Math.abs(k) * 0.03);
   }
+}
+function updateGalaxy(dt, now) {
+  if (!GV.ready) buildGalaxy();
+  if (GV.merge) mergeTick(dt, now);
+  else if (GV.playing) { GV.gt += GV.speed * dt; if (GV.gt > GT_MAX) { GV.gt = GT_MAX; GV.playing = false; syncGalUI(); } if (GV.gt < -GT_MAX) { GV.gt = -GT_MAX; GV.playing = false; syncGalUI(); } }
+  GV.glow.material.opacity = GV.art ? 0.22 : 0.9;
+  FAR.rot.rotation.y = -GV.omega * GM.kms * GV.gt; FAR.rot.updateMatrixWorld(true);
+  const s = sunAt(GV.gt), D = GVD(), sp = new THREE.Vector3(s.x, s.y * GV.vex, s.z);
+  galApplyPath();
   // camera
   const tw = GV.tween;
   if (tw) {
@@ -153,7 +159,7 @@ function updateGalaxy(dt, now) {
   GV.sun = s; GV.info = { gt: GV.gt, R: s.R, y: s.y, speed: s.speed, vR: s.vR, phi: s.phi, dist: GV.dist };
   // labels
   const lab = (key, text, cls, pos, ox, oy, show) => placeGalLabel(galLabel(key, text, cls), pos, ox, oy, show);
-  const on = S.tg.labels && S.view === 'galaxy';
+  const on = S.tg.labels && S.view === 'galaxy' && !GV.merge;
   lab('gc', 'Sagittarius A* · Galactic Centre', 'gc', new THREE.Vector3(0, 0, 0), 12, -6, on && GV.dist < 110);
   lab('sun', 'Sun · Orion Spur', 'sun', sp, 14, -8, on && GV.dist < 110);
   const armLab = [[0, 12.4, 'Perseus Arm'], [1, 10.4, 'Sagittarius–Carina Arm'], [2, 9.4, 'Scutum–Centaurus Arm'], [3, 11.6, 'Norma–Outer Arm']];
@@ -165,10 +171,11 @@ function updateGalaxy(dt, now) {
   updateFar(GV.dist, on, sp);
 }
 const _gv = new THREE.Vector3(), _gv2 = new THREE.Vector3();
-function placeGalLabel(el, pos, ox, oy, show) {
+function placeGalLabel(el, pos, ox, oy, show) { placeLabelCam(el, pos, ox, oy, show, galCam); }
+function placeLabelCam(el, pos, ox, oy, show, cam) {
   let on = false, x = 0, y = 0;
   if (show) {
-    _gv.copy(pos).project(galCam); _gv2.copy(pos).applyMatrix4(galCam.matrixWorldInverse);
+    _gv.copy(pos).project(cam); _gv2.copy(pos).applyMatrix4(cam.matrixWorldInverse);
     const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
     x = (_gv.x * 0.5 + 0.5) * w + ox; y = (-_gv.y * 0.5 + 0.5) * h + oy; on = _gv2.z < 0 && x > -60 && x < w + 60 && y > -20 && y < h + 20;
   }

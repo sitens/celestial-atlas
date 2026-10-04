@@ -6,7 +6,7 @@ const lightTime = km => { const s = km / 299792.458; return s < 90 ? `${s.toFixe
 function moonNow() { const t = ST.time, ph = A.MoonPhase(t), il = A.Illumination(A.Body.Moon, t); return { name: moonPhaseName(ph), pct: il.phase_fraction * 100, deg: ph }; }
 function nearestEclipse() { const E = U.ecl; if (!E) return null; const c = [E.solarPrev, E.solarNext, E.lunarPrev, E.lunarNext].filter(Boolean).sort((a, b) => Math.abs(a.peak - S.t) - Math.abs(b.peak - S.t)); return c[0] || null; }
 function earthSpeedKms() { const r = v3.len(ST.pos.Earth); return Math.sqrt(1.32712440018e11 * (2 / r - 1 / 149598023)); }
-function scaleOfGalaxy() { const d = GV.dist; return d < 0.014 ? 'sun' : d < 3.5 ? 'near' : d < 75 ? 'mw' : d < 450 ? 'sat' : d < 7350 ? 'lg' : d < 9.8e4 ? 'hub' : 'lan'; }
+function scaleOfGalaxy() { if (GV.merge) return 'merge'; const d = GV.dist; return d < 0.014 ? 'sun' : d < 3.5 ? 'near' : d < 75 ? 'mw' : d < 450 ? 'sat' : d < 7350 ? 'lg' : d < 9.8e4 ? 'hub' : 'lan'; }
 const eraName = gt => gt > -66 ? 'the Cenozoic (age of mammals)' : gt > -252 ? 'the Mesozoic (age of dinosaurs)' : gt > -541 ? 'the Paleozoic' : 'the Precambrian';
 
 function guideModel() {
@@ -15,7 +15,23 @@ function guideModel() {
   let title = 'Guide', key = v;
   if (v === 'system' || v === 'planet' || v === 'earthmoon') {
     const earthAU = v3.len(ST.pos.Earth) / AU_KM, mo = moonNow(), moonKm = v3.len(v3.sub(ST.pos.Moon, ST.pos.Earth));
-    if (v === 'earthmoon' || (v === 'planet' && S.selected === 'Moon')) {
+    if (LIFE.on && v === 'system') {
+      const s = LIFE.st || lifeState(LIFE.u), lost = LIFE_PLANETS.filter(p => LIFE.u >= LIFE.engulf[p[0]]).map(p => p[0]), a = id => (LIFE_PLANETS.find(p => p[0] === id)[1] / s.M);
+      title = 'Life of the Sun · ' + s.phase[2]; key += s.phase[2].slice(0, 6) + lost.length;
+      P.push(`<p><span class="num">${lifeFmtT(s.t)}</span> — ${s.phase[3]}</p>`);
+      P.push(`<p>Now the Sun shines at <b>${s.L >= 10 ? Math.round(s.L).toLocaleString('en-US') : s.L.toFixed(2)}</b> times today’s luminosity, is <b>${s.R >= 10 ? Math.round(s.R) : s.R >= 0.1 ? s.R.toFixed(2) : s.R.toFixed(3)}</b> solar radii wide and <b>${Math.round(s.T).toLocaleString('en-US')} K</b> at the surface (${s.T > 9000 ? 'blue-white' : s.T > 5200 ? 'yellow-white' : s.T > 3900 ? 'orange' : 'red'}), with ${s.M.toFixed(2)} of its present mass.</p>`);
+      if (s.t < -0.01) P.push('<p>A young Sun is ~30 % fainter than today (the “faint young Sun”), yet early Earth stayed warm thanks to a thicker greenhouse atmosphere.</p>');
+      else if (s.t < 0.9) P.push('<p>The Sun is about halfway through its hydrogen-burning life — 4.57 billion years old, with ~5.4 billion to go on the main sequence. It brightens by ≈ 1 % every 100 million years.</p>');
+      else if (s.t < 5.4) P.push(`<p>The green ring is the <b>habitable zone</b> (${s.hzIn.toFixed(2)}–${s.hzOut.toFixed(2)} AU). As the Sun brightens, its inner edge sweeps outward past Earth’s orbit about <b>1.1 billion years from now</b>: oceans evaporate (a “moist greenhouse”) and Earth turns <span style="color:#ff8a5a">hot</span>. Complex life on Earth would be long gone by +1.5 Gyr.</p>`);
+      else if (s.t < 7.59) P.push(`<p>As the envelope swells, Mercury and Venus are swallowed${lost.length > 2 ? ', and Earth is probably dragged in by tidal forces' : ''}. The planets’ orbits widen as the Sun loses mass (Earth’s would reach ${a('Earth').toFixed(2)} AU), but the swollen Sun (up to ${Math.round(256 * R_SUN_AU * 100) / 100} AU) reaches out to meet them.</p>`);
+      else if (s.t < 7.8) P.push('<p>Helium burning, then a final fierce phase of thermal pulses blows the outer layers into space. The Sun ends up as a dense core about 54 % of its present mass.</p>');
+      else P.push(`<p>An Earth-sized stellar ember (about ${(s.R * 109.2).toFixed(1)}× Earth’s width), fainter than a thousandth of today’s Sun. Mars-to-Neptune orbits have widened to ${a('Mars').toFixed(1)}–${a('Neptune').toFixed(0)} AU; Jupiter and beyond survive. The white dwarf cools for trillions of years toward a black dwarf.</p>`);
+      P.push('<p class="note" style="color:#8b97ae">Schematic view: distances use a square-root scale and planets are enlarged. Luminosity, size and mass follow published models (Sackmann+ 1993; Schröder &amp; Smith 2008). Earth’s exact fate is still debated.</p>');
+      tips.push(play('Press play to run the Sun’s life; slow phases (red giant to white dwarf) are stretched so you can watch them.'));
+      tips.push({ i: '📅', t: 'Drag the strip below to jump anywhere — or tap a milestone chip.' });
+      tips.push({ i: '✥', t: 'Drag to orbit, scroll to zoom in on the star, ✥ Move or WASD to pan.' });
+      tips.push({ i: '✕', t: 'Back to today’s Solar System.', a: () => setLife(false) });
+    } else if (v === 'earthmoon' || (v === 'planet' && S.selected === 'Moon')) {
       const lat = A.EclipticGeoMoon(ST.time).lat, near = Math.abs(lat) < 1.6;
       title = v === 'earthmoon' ? 'Earth and the Moon, to scale' : 'The Moon'; key += (near ? 'n' : '');
       P.push(`<p>${dateHtml}. The Moon is <b>${fmtBig(moonKm)} km</b> away (light takes <b>${lightTime(moonKm)}</b>) — about 30 Earth-widths. It is <b>${mo.name}</b>, ${mo.pct.toFixed(0)}% lit, because the Sun's light falls on it from the direction shown by the shading.</p>`);
@@ -53,6 +69,7 @@ function guideModel() {
       tips.push(play(`Press play — time runs at ${speedLabel()} from ${fmtNice(S.t, tz())}.`));
       tips.push({ i: '👆', t: 'Click a planet to learn about it; double-click to fly there. Drag to rotate, scroll or pinch to zoom.' });
       if (!HX.on) tips.push({ i: '🌌', t: 'Tap Galaxy (bottom bar) to leave the Solar System and see where we sit in the Milky Way.', a: () => setView('galaxy') });
+      if (!HX.on) tips.push({ i: '☀', t: 'Watch the Sun’s whole life — from birth to white dwarf — and what happens to the planets.', a: () => setLife(true) });
     }
   } else if (v === 'sky') {
     const i = SKY.info; if (!i.sunDir) return { key: 'sky0', title: 'The sky from here', paras: ['<p>Looking up from <b>' + esc(S.loc.name) + '</b>…</p>'], tips: [] };
@@ -70,7 +87,28 @@ function guideModel() {
   } else if (v === 'galaxy') {
     const sc = scaleOfGalaxy(), s = GV.sun || sunAt(GV.gt), gt = GV.gt; key += sc + (GV.drift ? 'd' : '');
     const era = eraName(gt), n = nearestArm(gt, GV.omega);
-    if (GV.drift && (sc === 'mw' || sc === 'sat')) {
+    if (S.cmp) {
+      title = 'Flat orbit vs the real helix'; key += 'cmp';
+      P.push(`<p><b>Left:</b> the textbook picture — the Galaxy stands still and the Sun just circles it in a closed loop. <b>Right:</b> the real motion — the whole Galaxy also drifts ≈ <b>${galDrift.speed.toFixed(0)} km/s</b> through the Universe (toward the Great Attractor), so the Sun’s path never closes: it winds forward like a corkscrew.</p>`);
+      tips.push(play('Press play to watch the Sun trace each path.')); tips.push({ i: '↔', t: 'Drag the divider to compare more of either side.' }); tips.push({ i: '✕', t: 'End the comparison.', a: () => $('gCmp').click() });
+    } else if (sc === 'merge') {
+      title = 'The Milky Way – Andromeda collision'; key += (MG.ready ? mgPhase().slice(0, 12) : 'build');
+      if (!MG.ready) P.push('<p>Running the simulation: 8,000 stars and two dark-matter haloes for 10 billion years…</p>');
+      else {
+        const i = MG.info, e = MG.ev, f = MG.final, am = MG.atMerge, tG = GV.mt / 1000, sepLy = i.sep * LY_PER_KPC;
+        P.push(`<p><span class="num">${GV.mt < 50 ? 'Today' : '+' + tG.toFixed(2) + ' billion years'}</span> — ${esc(i.phase)}. The two centres are ${sepLy < 6000 ? '<b>on top of each other</b>' : '<b>' + fmtBig(sepLy / 1000, 0) + ' thousand light-years</b> apart'}${GV.mt < 50 ? ' (Andromeda is really 2.5 million light-years away; this scene is drawn at 1 : 1, centred on the pair)' : ''}.</p>`);
+        if (GV.mt < e.first - 80) P.push('<p>Andromeda is falling toward us at <b>~110 km/s</b>. Gravity — mostly from the dark-matter haloes that reach out ~100 kpc around each galaxy — is slowly pulling both discs toward a head-on encounter about <b>4 billion years</b> from now.</p>');
+        else if (GV.mt < e.second - 300) P.push(`<p>The first close pass came ${(e.first / 1000).toFixed(1)} billion years from now, at ~${fmtBig(e.firstR, 0)} kpc. Tidal forces fling stars into <b>long tails</b> and a <b>bridge</b>; gas piles up and sets off bursts of star formation (not drawn). Dynamical friction slows the galaxies, so they fall back.</p>`);
+        else if (GV.mt < e.merged + 400) P.push('<p>On the second approach the cores plunge through each other again and sink together. Stars almost never collide — they are light-years apart — so the galaxies pass through each other like two swarms of bees.</p>');
+        else if (f) P.push(`<p>The result is one smooth, reddish <b>elliptical galaxy</b> some call <b>Milkomeda</b>. Final state in this model: half the stars lie within <b>${fmtBig(f.rHalf * LY_PER_KPC / 1000, 0)} thousand light-years</b> of the centre, shape ≈ ${f.ba.toFixed(2)} : ${f.ca.toFixed(2)} (axis ratios) — ${f.ca > 0.75 ? 'nearly spherical' : 'a rounded, slightly flattened spheroid'}. The discs are gone; star formation has stopped, so it fades to orange.</p>`);
+        P.push(`<p>The <span style="color:#ffe9a8">yellow ring</span> is our Sun (a test star started on its present orbit): it now sits <b>${fmtBig(i.sunDist * LY_PER_KPC / 1000, 0)} thousand light-years</b> from the middle. The planets are not disturbed — the Sun will probably be flung to the outskirts, not destroyed. By then the Sun itself is dying: <b>see “Sun’s life”</b>.</p>`);
+        P.push('<p class="note" style="color:#8b97ae">Illustrative physics: a restricted simulation (stars are test particles in two moving dark haloes with dynamical friction), tuned to published timelines — first pass ≈ 4 Gyr, second ≈ 6 Gyr, merged ≈ 6.5–7 Gyr (Cox &amp; Loeb 2008; van der Marel et al. 2012). Gas, M33 and the true halo masses are not modelled.</p>');
+      }
+      tips.push(play(`Press play: ${Math.abs(GV.speed)} million years pass every second. Reverse (⏪) runs the collision backwards.`));
+      if (MG.ready) { tips.push({ i: '💥', t: 'Jump to the first close pass.', a: () => $('mgFirst').click() }); tips.push({ i: '🏁', t: 'Jump to the final state (10 billion years from now).', a: () => $('mgFinal').click() }); }
+      tips.push({ i: '✥', t: 'Drag to orbit, scroll to zoom, ✥ Move (or right-drag / WASD) to pan. Switch off Auto-frame to take the camera yourself.' });
+      tips.push({ i: '☀', t: 'See how the Sun’s own life ends about when this happens.', a: () => { setView('system', { noFly: true }); setLife(true); } });
+    } else if (GV.drift && (sc === 'mw' || sc === 'sat')) {
       title = 'The Sun\'s true path: a helix through space';
       P.push(`<p>The Sun circles the Galaxy's centre — but the whole Galaxy is itself drifting ~<b>${galDrift.speed.toFixed(0)} km/s</b> toward the Great Attractor. Add the two motions and the Sun's path stops being a closed ring: it winds forward like a <b>corkscrew</b>, bobbing up and down through the disc as it goes. The glowing beads are the Sun's recent past and near future.</p>`);
       P.push(`<p>For clarity the drift is drawn at <b>${(GV.dscale * 100).toFixed(0)}%</b> of its real speed so the coils are visible (Options ▸ Galaxy ▸ Drift speed). The planets' own, much tighter corkscrews are what you saw behind the Sun at the smallest scale.</p>`);
@@ -137,6 +175,7 @@ function speakGuide(m) {
   if (txt === GD.spoken) return; GD.spoken = txt;
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.rate = 1.0; u.pitch = 1; speechSynthesis.speak(u); } catch (e) { }
 }
+function speakText(txt) { if (!GD.voice || !('speechSynthesis' in window)) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt); u.rate = 1.0; speechSynthesis.speak(u); } catch (e) { } }
 function setVoice(on) {
   GD.voice = !!on && 'speechSynthesis' in window; if (on && !GD.voice) toast('This browser has no speech synthesis.');
   try { localStorage.setItem('ca.voice', GD.voice ? '1' : '0'); } catch (e) { }
@@ -187,6 +226,13 @@ function tipFor(key, el) {
     case 'v-galaxy': return d('Galaxy', 'Leave the Solar System: the Milky Way, the Sun\'s orbit, neighbours, the Local Group and Laniakea.', GV.sun ? `Sun is ${(GV.sun.R * LY_PER_KPC / 1000).toFixed(1)}k ly from the centre` : '');
     case 'aimSun': return d('Aim at the Sun', 'Points the sky view at the Sun and zooms in for eclipses.', SKY.info.sunAlt != null ? `Sun is ${SKY.info.sunAlt.toFixed(0)}° ${SKY.info.sunAlt >= 0 ? 'high' : 'below the horizon'}${SKY.info.obsc > 0 ? ` · ${(SKY.info.obsc * 100).toFixed(0)}% eclipsed` : ''}` : '');
     case 'aimMoon': return d('Aim at the Moon', 'Points the sky view at the Moon.', SKY.info.moonAlt != null ? `Moon is ${SKY.info.moonAlt.toFixed(0)}° ${SKY.info.moonAlt >= 0 ? 'high' : 'below the horizon'}` : '');
+    case 'mgAuto': return d('Auto-frame', 'Keeps both galaxies (and their tails) in view as they move. Turn it off to fly the camera yourself.', `Now: ${on(MG.auto)}`);
+    case 'pan': return d('Move mode', 'When on, one-finger / left-button drag pans the camera across space instead of rotating it. Always available: right-drag, Shift-drag, two-finger drag, or W A S D.', `Now: ${on(document.body.classList.contains('panmode'))}`);
+    case 'recenter': return d('Recenter', 'Fly back to the default centre for this view.');
+    case 'life': return d('Sun’s life', 'Watch the Sun’s whole life: birth, today, red giant, planetary nebula, white dwarf — with the planets’ orbits.');
+    case 'lifeExit': return d('Back to the planets', 'Leave the life-cycle view and return to today’s Solar System.');
+    case 'cmpDiv': return d('Divider', 'Drag left or right to compare more of either side.');
+    case 'sc-merge': return d('Collision', 'Andromeda and the Milky Way fall together and merge into one elliptical galaxy over the next ~7 billion years.', MG.ready ? `Now: +${(GV.mt / 1000).toFixed(2)} Gyr` : '');
     case 'hxCmp': return d('Compare', 'Split the screen: the textbook flat view (left) and the real moving system (right).', `Now: ${on(S.cmp)}`);
     case 'hxGal': return d('Zoom out to the Galaxy', 'See this helix as a tiny piece of the Sun\'s orbit around the Milky Way.');
     case 'gArt': return d('NASA artist\'s concept', 'Paints NASA/JPL\'s illustration under the model stars. It fades out edge-on, where the real 3-D shape shows.', `Now: ${on(GV.art)}`);

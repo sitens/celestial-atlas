@@ -40,10 +40,30 @@ function stepCamera(now) {
 
 // ---------- input ----------
 const ptrs = new Map(); let dragInfo = null, pinch0 = null;
+const NAV = { pan: false };
+const _pr = new THREE.Vector3(), _pu = new THREE.Vector3();
+// pan the camera across space (screen-plane move). Works in every orbit-camera view; the Sky view only looks around.
+function panBy(dx, dy) {
+  if (S.view === 'sky') return;
+  if (S.view === 'galaxy') {
+    const k = GV.dist * 0.0016; _pr.setFromMatrixColumn(galCam.matrixWorld, 0); _pu.setFromMatrixColumn(galCam.matrixWorld, 1);
+    GV.tween = null; GV.follow = false; GV.tx += (-_pr.x * dx + _pu.x * dy) * k; GV.ty += (-_pr.y * dx + _pu.y * dy) * k; GV.tz += (-_pr.z * dx + _pu.z * dy) * k;
+    if (GV.merge) { MG.auto = false; mgSyncUI(); } return;
+  }
+  if (LIFE.on) { const k = LIFE.dist * 0.0016; _pr.setFromMatrixColumn(lifeCam.matrixWorld, 0); _pu.setFromMatrixColumn(lifeCam.matrixWorld, 1); LIFE.tween = null; LIFE.tx += (-_pr.x * dx + _pu.x * dy) * k; LIFE.ty += (-_pr.y * dx + _pu.y * dy) * k; LIFE.tz += (-_pr.z * dx + _pu.z * dy) * k; return; }
+  const k = CAM.dist * 0.0016; _pr.setFromMatrixColumn(camera.matrixWorld, 0); _pu.setFromMatrixColumn(camera.matrixWorld, 1);
+  CAM.tween = null; CAM.blend = 1; CAM.offset[0] += (-_pr.x * dx + _pu.x * dy) * k; CAM.offset[1] += (-_pr.y * dx + _pu.y * dy) * k; CAM.offset[2] += (-_pr.z * dx + _pu.z * dy) * k;
+}
+function setPanMode(on) { NAV.pan = !!on; document.body.classList.toggle('panmode', NAV.pan); const b = $('btnPan'); if (b) { b.classList.toggle('on', NAV.pan); b.setAttribute('aria-pressed', NAV.pan); } }
+function recenterView() {
+  if (S.view === 'galaxy') { if (GV.merge) { MG.auto = true; mgSyncUI(); } else galScaleTo(scaleOfGalaxy()); return; }
+  if (S.view === 'system' && LIFE.on) { lifeFrame(); return; }
+  if (S.view === 'sky') return; CAM.offset = [0, 0, 0]; flyTo({ focus: CAM.focus, dur: 900 });
+}
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  dragInfo = { x: e.clientX, y: e.clientY, moved: 0, pan: e.shiftKey || e.button === 2 || e.button === 1 };
-  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: S.view === 'galaxy' ? GV.dist : CAM.dist, fov: SKY.fov }; }
+  dragInfo = { x: e.clientX, y: e.clientY, moved: 0, pan: e.shiftKey || e.button === 2 || e.button === 1 || NAV.pan };
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: S.view === 'galaxy' ? GV.dist : (LIFE.on && S.view === 'system') ? LIFE.dist : CAM.dist, fov: SKY.fov, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
   tourCancel(); CAM.tween = null; CAM.blend = 1;
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -53,30 +73,32 @@ canvas.addEventListener('pointermove', e => {
   const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
   if (ptrs.size === 2 && pinch0) {
     const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), r = pinch0.d / Math.max(1, d);
-    if (S.view === 'sky') SKY.fov = clamp(pinch0.fov * r, 2, 110); else if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(pinch0.dist * r, 0.0004, 900); } else CAM.dist = pinch0.dist * r; return;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; if (S.view !== 'sky') panBy(mx - pinch0.mx, my - pinch0.my); pinch0.mx = mx; pinch0.my = my;   // two fingers: pinch zooms, drag pans
+    if (S.view === 'sky') SKY.fov = clamp(pinch0.fov * r, 2, 110); else if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(pinch0.dist * r, 0.0004, 6e5); if (GV.merge) { MG.auto = false; mgSyncUI(); } } else if (LIFE.on) { LIFE.tween = null; LIFE.dist = clamp(pinch0.dist * r, LIFE.min, LIFE.max); } else CAM.dist = pinch0.dist * r; return;
   }
   dragInfo.moved += Math.abs(dx) + Math.abs(dy);
   if (S.view === 'galaxy') {
-    GV.tween = null; GV.yaw -= dx * 0.0052; GV.pitch = clamp(GV.pitch + dy * 0.0052, -1.52, 1.52);
+    if (dragInfo.pan) panBy(dx, dy); else { GV.tween = null; GV.yaw -= dx * 0.0052; GV.pitch = clamp(GV.pitch + dy * 0.0052, -1.52, 1.52); if (GV.merge && dragInfo.moved > 6) { MG.auto = false; mgSyncUI(); } }
+  } else if (S.view === 'system' && LIFE.on) {
+    if (dragInfo.pan) panBy(dx, dy); else { LIFE.tween = null; LIFE.yaw -= dx * 0.0052; LIFE.pitch = clamp(LIFE.pitch + dy * 0.0052, -1.52, 1.52); }
   } else if (S.view === 'sky') {
     const dpp = SKY.fov / renderer.domElement.clientHeight;
     SKY.az = (SKY.az - dx * dpp + 360) % 360; SKY.alt = clamp(SKY.alt + dy * dpp, -89, 89);
   } else if (dragInfo.pan || e.shiftKey) {
-    const k = CAM.dist * 0.0016, right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
-    CAM.offset[0] += (-right.x * dx + up.x * dy) * k; CAM.offset[1] += (-right.y * dx + up.y * dy) * k; CAM.offset[2] += (-right.z * dx + up.z * dy) * k;
+    panBy(dx, dy);
   } else { CAM.yaw -= dx * 0.0052; CAM.pitch = clamp(CAM.pitch + dy * 0.0052, -1.52, 1.52); }
 });
 canvas.addEventListener('pointerup', e => {
   ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = null;
-  if (dragInfo && dragInfo.moved < 5 && S.view !== 'sky' && S.view !== 'galaxy') { const id = pickBody(e.clientX, e.clientY); if (id) selectBody(id); }
+  if (dragInfo && dragInfo.moved < 5 && S.view !== 'sky' && S.view !== 'galaxy' && !LIFE.on) { const id = pickBody(e.clientX, e.clientY); if (id) selectBody(id); }
   if (ptrs.size === 0) dragInfo = null;
 });
 canvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch0 = null; });
-canvas.addEventListener('dblclick', e => { if (S.view === 'sky' || S.view === 'galaxy') return; const id = pickBody(e.clientX, e.clientY); if (id) { selectBody(id); focusBody(id); } });
+canvas.addEventListener('dblclick', e => { if (S.view === 'sky' || S.view === 'galaxy' || LIFE.on) return; const id = pickBody(e.clientX, e.clientY); if (id) { selectBody(id); focusBody(id); } });
 canvas.addEventListener('wheel', e => {
   e.preventDefault(); tourCancel();
   const k = Math.exp(clamp(e.deltaY, -300, 300) * 0.0011);
-  if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(GV.dist * k, 0.0004, 900); } else if (S.view === 'sky') SKY.fov = clamp(SKY.fov * k, 2, 110); else { CAM.tween = null; CAM.blend = 1; CAM.dist = clamp(CAM.dist * k, camLimits().min, camLimits().max); }
+  if (S.view === 'galaxy') { GV.tween = null; GV.dist = clamp(GV.dist * k, 0.0004, 6e5); if (GV.merge) { MG.auto = false; mgSyncUI(); } } else if (S.view === 'system' && LIFE.on) { LIFE.tween = null; LIFE.dist = clamp(LIFE.dist * k, LIFE.min, LIFE.max); } else if (S.view === 'sky') SKY.fov = clamp(SKY.fov * k, 2, 110); else { CAM.tween = null; CAM.blend = 1; CAM.dist = clamp(CAM.dist * k, camLimits().min, camLimits().max); }
   syncFov();
 }, { passive: false });
 function pickBody(cx, cy) {
@@ -90,7 +112,7 @@ function pickBody(cx, cy) {
 }
 const tip = document.createElement('div'); tip.id = 'tip'; tip.style.cssText = 'position:fixed;z-index:25;pointer-events:none;background:#0b1020e0;border:1px solid #fff2;border-radius:8px;padding:5px 9px;font-size:11.5px;display:none;white-space:nowrap'; document.body.appendChild(tip);
 function hoverMove(e) {
-  if (S.view === 'sky' || S.view === 'galaxy' || !ST) { tip.style.display = 'none'; return; }
+  if (S.view === 'sky' || S.view === 'galaxy' || LIFE.on || !ST) { tip.style.display = 'none'; return; }
   const id = pickBody(e.clientX, e.clientY);
   if (!id) { tip.style.display = 'none'; canvas.style.cursor = 'grab'; return; }
   canvas.style.cursor = 'pointer';
@@ -120,7 +142,8 @@ function focusBody(id, opts = {}) {
 function markView() {
   document.querySelectorAll('.vbtn[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
   document.body.classList.toggle('galaxy', S.view === 'galaxy'); document.body.dataset.view = S.view;
-  if (S.cmp && S.view !== 'system') setCompare(false);
+  if (S.cmp && S.view !== S.cmpView) setCompare(false);
+  if (S.view !== 'galaxy' && GV.merge) exitMerge();
   if (S.view === 'galaxy' && S.playing) S.playing = false;   // one transport: in the Galaxy it runs galactic time, so pause the clock
   updateSkyUI(); if (typeof syncPlayUI === 'function' && $('spdSel')) { syncPlayUI(); TL.lastKey = null; }
 }
@@ -133,7 +156,7 @@ function setScale(tr, keepCam) {
   const chip = document.querySelector('[data-tg="trueScale"]'); if (chip) chip.classList.toggle('on', tr);
 }
 function setView(v, opts = {}) {
-  tourCancel();
+  tourCancel(); if (LIFE.on) setLife(false);
   if (v === 'galaxy') { enterGalaxy({ intro: !opts.noIntro }); return; }
   if (v === 'sky') { S.view = 'sky'; markView(); if (!SKY.aimed || opts.reaim) { SKY.aimed = true; SKY.needAim = true; } return; }
   const prev = S.view; S.view = v; markView();
@@ -181,19 +204,21 @@ function setSpeed(v) {
 }
 function togglePlay() {
   if (S.view === 'galaxy') { GV.playing = !GV.playing; syncPlayUI(); return; }
+  if (S.view === 'system' && LIFE.on) { LIFE.playing = !LIFE.playing; syncPlayUI(); return; }
   if (S.live) { S.live = false; S.playing = false; }
   else S.playing = !S.playing;
   syncPlayUI(); uiTimeChanged();
 }
 // ONE transport: in the Galaxy view the same buttons run galactic time (Myr per second)
 const GAL_SPEEDS = [['1 Myr / s', 1], ['5 Myr / s', 5], ['20 Myr / s', 20], ['60 Myr / s', 60], ['200 Myr / s', 200]];
+const MG_SPEEDS = [['50 Myr / s', 50], ['100 Myr / s', 100], ['250 Myr / s', 250], ['500 Myr / s', 500], ['1000 Myr / s', 1000]];
 let spdMode = '';
 function syncPlayUI() {
-  const gal = S.view === 'galaxy', playing = gal ? GV.playing : S.playing, mode = gal ? 'g' : 't';
-  if (mode !== spdMode) { spdMode = mode; $('spdSel').innerHTML = (gal ? GAL_SPEEDS : SPEEDS).map(s => `<option value="${s[1]}">${s[0]}</option>`).join(''); }
+  const gal = S.view === 'galaxy', life = typeof LIFE !== 'undefined' && LIFE.on && S.view === 'system', mode = gal ? (GV.merge ? 'm' : 'g') : life ? 'l' : 't', playing = gal ? GV.playing : life ? LIFE.playing : S.playing;
+  if (mode !== spdMode) { spdMode = mode; $('spdSel').innerHTML = (mode === 'm' ? MG_SPEEDS : mode === 'g' ? GAL_SPEEDS : mode === 'l' ? LIFE_SPEEDS : SPEEDS).map(s => `<option value="${s[1]}">${s[0]}</option>`).join(''); }
   $('btnPlay').textContent = playing ? '⏸' : '▶'; $('btnPlay').classList.toggle('on', playing);
-  $('btnRev').classList.toggle('on', gal ? GV.speed < 0 : S.dir < 0); $('spdSel').value = String(gal ? Math.abs(GV.speed) : S.speed);
-  $('btnNow').firstChild && ($('btnNow').textContent = gal ? '⟲ Today' : '⟲ Now');
+  $('btnRev').classList.toggle('on', gal ? GV.speed < 0 : life ? LIFE.speed < 0 : S.dir < 0); $('spdSel').value = String(gal ? Math.abs(GV.speed) : life ? Math.abs(LIFE.speed) : S.speed);
+  $('btnNow').textContent = gal || life ? '⟲ Today' : '⟲ Now';
 }
 
 // ---------- cinematic tour ----------
@@ -205,7 +230,7 @@ async function runTour() {
   if (touring) { tourCancel(); return; }
   touring = true; const tok = ++tourToken; tourRestore = { scale: S.trueScale };
   $('bars').style.display = 'block'; $('btnTour').classList.add('on'); S.view = 'planet'; markView();
-  const cap = t => { const c = $('cap'); c.style.opacity = 0; setTimeout(() => { c.textContent = t; c.style.opacity = 1; }, 300); };
+  const cap = t => { const c = $('cap'); c.style.opacity = 0; setTimeout(() => { c.textContent = t; c.style.opacity = 1; }, 300); GD.capText = t; if (GD.voice) speakText(t); };
   const when = fmtNice(S.t, S.loc.tz) + ' · ' + S.loc.name;
   const steps = [
     () => { setScale(false); cap(`The Solar System · ${when}`); flyTo({ focus: 'Sun', dist: 190, pitch: 0.55, yaw: 0.4, dur: 2600 }); return 5200; },
@@ -223,9 +248,16 @@ async function runTour() {
     () => { cap('Our neighbours: the Magellanic Clouds, dwarf galaxies — and Andromeda, falling toward us'); GV.drift = false; GV.playing = false; syncGalUI(); galScaleTo('sat', 3500); return 5500; },
     () => { galScaleTo('lg', 4500); cap('The Local Group — Andromeda (M31) approaches at 110 km/s; merger in ~4–5 billion years'); return 7000; },
     () => { galScaleTo('lan', 6000); cap('Laniakea — the whole Local Group flows at ~600 km/s toward the Great Attractor'); return 9000; },
+    () => { galScaleTo('hub', 5000); cap('Hubble’s famous galaxies — the Whirlpool, the Sombrero, the colliding Antennae — all inside our home supercluster'); return 8000; },
+    async () => { cap('And the Local Group has a future: Andromeda is falling toward us at 110 km/s'); galScaleTo('merge'); const t0 = performance.now(); while (!MG.ready && performance.now() - t0 < 30000 && tok === tourToken) await new Promise(r => setTimeout(r, 200)); GV.mt = 0; GV.speed = 450; GV.playing = true; syncPlayUI(); return 8500; },
+    () => { cap('First close pass, about 3.6 billion years from now — tidal tails of stars are flung across 100,000 light-years'); GV.speed = 250; return 7500; },
+    () => { cap('A second pass, and the two cores spiral together…'); GV.speed = 400; return 7500; },
+    () => { cap('By ~6 billion years from now: one giant elliptical galaxy — Milkomeda. The discs are gone and it fades to orange'); GV.speed = 500; return 9000; },
+    () => { GV.playing = false; exitMerge(); S.view = 'system'; markView(); setLife(true); LIFE.u = 0.17; LIFE.playing = true; LIFE.speed = 2; syncPlayUI(); cap('Meanwhile the Sun lives out its life: slowly brightening, then swelling into a red giant that swallows Mercury and Venus…'); return 11000; },
+    () => { LIFE.speed = 1; LIFE.u = Math.max(LIFE.u, 0.55); cap('…then shedding its outer layers as a planetary nebula, leaving a white dwarf the size of Earth'); return 12000; },
   ];
-  for (const st of steps) { if (tok !== tourToken) return; const wait = st(); await sleep(wait, tok); }
-  if (tok === tourToken) { GV.playing = false; GV.drift = false; GV.gt = 0; syncGalUI(); tourCancel(); S.view = 'system'; markView(); }
+  for (const st of steps) { if (tok !== tourToken) return; let wait = await st(); if (GD.voice && GD.capText) wait = Math.max(wait, 1500 + GD.capText.split(/\s+/).length * 430); await sleep(wait, tok); }
+  if (tok === tourToken) { GV.playing = false; GV.drift = false; GV.gt = 0; LIFE.playing = false; setLife(false); syncGalUI(); tourCancel(); S.view = 'system'; markView(); }
 }
 
 // ---------- location ----------
@@ -239,21 +271,29 @@ function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.st
 let lastFrame = performance.now(), fpsAcc = 0, fpsN = 0, FPS = 0;
 function resize() {
   const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false);
-  camera.aspect = w / h; camera.updateProjectionMatrix(); skyCam.aspect = w / h; skyCam.updateProjectionMatrix(); galCam.aspect = w / h; galCam.updateProjectionMatrix();
+  camera.aspect = w / h; camera.updateProjectionMatrix(); skyCam.aspect = w / h; skyCam.updateProjectionMatrix(); lifeCam.aspect = w / h; lifeCam.updateProjectionMatrix(); galCam.aspect = w / h; galCam.updateProjectionMatrix();
   postResize();
 }
 addEventListener('resize', resize);
 // split-screen explainer: same camera, same instant; left without the helix trails (the textbook flat picture), right with them
 function renderCompare() {
-  const W = innerWidth, H = innerHeight, hw = Math.floor(W / 2);
-  camera.aspect = hw / H; camera.updateProjectionMatrix();
+  const W = innerWidth, H = innerHeight, hw = Math.floor(W * (S.cmpX || 0.5));
   renderer.setRenderTarget(null); renderer.setScissorTest(true);
+  camera.aspect = hw / H; camera.updateProjectionMatrix();
   HX.group.visible = false; renderer.setViewport(0, 0, hw, H); renderer.setScissor(0, 0, hw, H); renderer.render(scene, camera);
+  camera.aspect = (W - hw) / H; camera.updateProjectionMatrix();
   HX.group.visible = true; renderer.setViewport(hw, 0, W - hw, H); renderer.setScissor(hw, 0, W - hw, H); renderer.render(scene, camera);
   renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H);
   camera.aspect = W / H; camera.updateProjectionMatrix();
 }
-let lastViewKind = '';
+// Galaxy view: left half = the Galaxy at rest (flat orbit), right half = the Galaxy drifting (the Sun's path becomes a helix)
+function renderGalCompare() {
+  const W = innerWidth, H = innerHeight, hw = Math.floor(W * (S.cmpX || 0.5)), keep = GV.drift;
+  renderer.setRenderTarget(null); renderer.setScissorTest(true);
+  for (const [x, w, drift] of [[0, hw, false], [hw, W - hw, true]]) { GV.drift = drift; galApplyPath(); galCam.aspect = w / H; galCam.updateProjectionMatrix(); renderer.setViewport(x, 0, w, H); renderer.setScissor(x, 0, w, H); renderer.render(galScene, galCam); }
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); GV.drift = keep; galApplyPath(); galCam.aspect = W / H; galCam.updateProjectionMatrix();
+}
+let lastViewKind = '', lastLife = false;
 const PROF = { state: 0, scene: 0, ui: 0, n: 0 };
 let dprAuto = Math.min(window.devicePixelRatio || 1, 2), dprTarget = dprAuto, adaptT = 0;
 function frame(now) {
@@ -272,7 +312,7 @@ function frame(now) {
   if (applyStarEpoch(S.t)) SKY.lblKey = null;
   const p1 = performance.now();
   if (S.view === 'galaxy') {
-    updateGalaxy(dt, now); renderScene(galScene, galCam);
+    updateGalaxy(dt, now); if (S.cmp && !GV.merge) renderGalCompare(); else renderScene(GV.merge && MG.pts ? MG.scene : galScene, galCam);
     if (lastViewKind !== 'gal') { lastViewKind = 'gal'; for (const id in OB) OB[id].label.style.display = 'none'; for (const k of ['N', 'E', 'S', 'W']) markerLabels[k].style.display = 'none'; for (const k in SKY.labels) { SKY.labels[k].style.display = 'none'; SKY.labels[k]._on = false; } }
   } else if (S.view === 'sky') {
     if (lastViewKind === 'gal') hideGalLabels();
@@ -281,9 +321,15 @@ function frame(now) {
   } else {
     if (lastViewKind === 'gal') hideGalLabels();
     if (lastViewKind !== 'sys') { lastViewKind = 'sys'; for (const k in SKY.labels) { SKY.labels[k].style.display = 'none'; SKY.labels[k]._on = false; } }
+    if (LIFE.on) {
+      if (!lastLife) { lastLife = true; for (const id in OB) OB[id].label.style.display = 'none'; if (HX.label) HX.label.style.display = 'none'; }
+      updateLife(dt, now); renderScene(lifeScene, lifeCam);
+    } else {
+    if (lastLife) { lastLife = false; for (const k in LIFE.labels) { LIFE.labels[k].style.display = 'none'; LIFE.labels[k]._on = false; } }
     const origin = stepCamera(now);
     updateScene(ST, origin); updateLabels();
     if (S.cmp && HX.on) renderCompare(); else renderScene(scene, camera);
+    }
   }
   const p2 = performance.now();
   uiTick(now);

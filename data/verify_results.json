@@ -17,22 +17,22 @@
  [
   "B view 'system' renders (non-blank)",
   true,
-  "variance 422.3"
+  "variance 419.1"
  ],
  [
   "B view 'earthmoon' renders (non-blank)",
   true,
-  "variance 238.9"
+  "variance 252.9"
  ],
  [
   "B view 'planet' renders (non-blank)",
   true,
-  "variance 551.1"
+  "variance 381.7"
  ],
  [
   "B view 'sky' renders (non-blank)",
   true,
-  "variance 2476.5"
+  "variance 195.7"
  ],
  [
   "C geocode 'Tokyo' -> place + IANA tz Asia/Tokyo",
@@ -42,12 +42,12 @@
  [
   "C weather card for Tokyo",
   true,
-  "18\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 18 \u00b0C Humidity 68 % Wind 3 km/h N \u00b7 gust 8 Pressure 1022 h"
+  "21\u00b0C \ud83c\udf24\ufe0f Mainly clear Feels like 21 \u00b0C Humidity 68 % Wind 6 km/h NNE \u00b7 gust 20 Pressure 102"
  ],
  [
   "C sky view for Tokyo computed",
   true,
-  "{\"sun\":-54.52599407353668,\"L\":0}"
+  "{\"sun\":43.73256297790046,\"L\":1}"
  ],
  [
   "C geocode 'Sydney' -> place + IANA tz Australia/Sydney",
@@ -57,12 +57,12 @@
  [
   "C weather card for Sydney",
   true,
-  "16\u00b0C \ud83c\udf26\ufe0f Light drizzle Feels like 17 \u00b0C Humidity 97 % Wind 7 km/h WNW \u00b7 gust 13 Pressure 10"
+  "22\u00b0C \u2600\ufe0f Clear sky Feels like 22 \u00b0C Humidity 46 % Wind 13 km/h W \u00b7 gust 32 Pressure 1018 hP"
  ],
  [
   "C sky view for Sydney computed",
   true,
-  "{\"sun\":-51.42315697461575,\"L\":0}"
+  "{\"sun\":57.92018112443864,\"L\":1}"
  ],
  [
   "C geocode 'Madrid' -> place + IANA tz Europe/Madrid",
@@ -72,12 +72,12 @@
  [
   "C weather card for Madrid",
   true,
-  "22\u00b0C \u2601\ufe0f Overcast Feels like 22 \u00b0C Humidity 60 % Wind 5 km/h E \u00b7 gust 15 Pressure 1022 hPa "
+  "17\u00b0C \ud83c\udf26\ufe0f Rain showers Feels like 19 \u00b0C Humidity 90 % Wind 3 km/h NNE \u00b7 gust 9 Pressure 1022"
  ],
  [
   "C sky view for Madrid computed",
   true,
-  "{\"sun\":41.950523363875675,\"L\":1}"
+  "{\"sun\":-52.0769800867877,\"L\":0}"
  ],
  [
   "D ISO typing '1969-07-20 20:17:00' (UTC)",
@@ -192,7 +192,7 @@
  [
   "V1 relief normal map + live cloud grid active",
   true,
-  "Earth clouds: live Open-Meteo grid (20\u00b0), 14:00 UTC \u00b7 ERA5 history"
+  "Earth clouds: static texture (cloud grid unavailable)"
  ],
  [
   "V2 bloom pipeline available",
@@ -252,7 +252,7 @@
  [
   "W3 helix: 9 planets + Moon trails drawn, group visible",
   true,
-  "{'n': 672, 'ext': 443.31309799841256, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
+  "{'n': 672, 'ext': 443.3647766412188, 'lines': 10, 'l': 87.40845951812634, 'b': 1.691604062883448, 'v': 245.59810687381125, 'vis': True}"
  ],
  [
   "W4 helix: Earth's corkscrew is long along the Sun's direction of travel",
@@ -313,21 +313,6 @@
   "K 'Now' returns to the LIVE clock",
   true,
   ""
- ],
- [
-  "L past date uses archive data, labelled 'Historical (ERA5 reanalysis)'",
-  true,
-  "26\u00b0C \u2601\ufe0f Overcast Feels like 28 \u00b0C Humidity 57 % Wind 17 km/h S \u00b7 gust 34 Pressure 1012 hPa Precipita"
- ],
- [
-  "L +1 year: 'No forecast available' + labelled climatology",
-  true,
-  "No forecast available this far ahead. 20\u00b0C typical Mean cloud cover 15 % Chance of rain 10 % Typical wind 9 km/h Climato"
- ],
- [
-  "L before 1940: 'No weather data'",
-  true,
-  "No weather data before 1940."
  ],
  [
   "M event jump: next solar eclipse after 2026-09-30 = 2027-02-06",
@@ -392,12 +377,12 @@
  [
   "U5 guide narrates the system view with live values",
   true,
-  "3 Oct 2026 08:25. You are looking down on the plane of Earth's orbit. Earth is 1.001 AU from the Sun"
+  "3 Oct 2026 19:52. You are looking down on the plane of Earth's orbit. Earth is 1.000 AU from the Sun"
  ],
  [
   "U6 hover tooltip shows the live effect (speed + time)",
   true,
-  "Play Freezes the live clock; then plays from here. 1\u00d7 real-time \u00b7 3 Oct 2026 08:25"
+  "Play Freezes the live clock; then plays from here. 1\u00d7 real-time \u00b7 3 Oct 2026 19:52"
  ],
  [
   "U7 compare mode splits the screen",
@@ -410,19 +395,109 @@
   ""
  ],
  [
+  "Y1 collision simulation builds (14,000 stars, 10 Gyr, checkpoints)",
+  true,
+  "51"
+ ],
+ [
+  "Y2 key moments: first pass 3.2-4.4 Gyr, second 5.0-6.4 Gyr, merged 5.8-7.6 Gyr",
+  true,
+  "{'first': 3616, 'second': 5554, 'merged': 6304, 'firstR': 29.357236862182617, 'secondR': 27.79480743408203}"
+ ],
+ [
+  "Y3 'First pass' chip scrubs to the first close pass and the simulation follows",
+  true,
+  "mt 3616, step 1808"
+ ],
+ [
+  "Y4 final state: one remnant, narration describes Milkomeda",
+  true,
+  "The Milky Way \u2013 Andromeda collision"
+ ],
+ [
+  "Y5 'Today' returns the collision to t=0 (rewinds the simulation)",
+  true,
+  ""
+ ],
+ [
+  "Y6 transport plays the collision (Myr/s)",
+  true,
+  "392.07500000000437"
+ ],
+ [
+  "Y7 Move mode: one-finger/left drag pans across space (and stops Auto-frame)",
+  true,
+  "-106.52928300479195"
+ ],
+ [
+  "Y8 Recenter turns Auto-frame back on",
+  true,
+  ""
+ ],
+ [
+  "Y9 zoomed inside 100 pc: dense Gaia sample (92k stars) fades in",
+  true,
+  "{'v': True, 'a': 0.85, 'n': 92385, 'gould': False}"
+ ],
+ [
+  "Y10 Gould Belt ring visible at ~1 kpc",
+  true,
+  ""
+ ],
+ [
+  "Y11 Hubble galaxy labels are clickable and open a photo card",
+  true,
+  "5 labels, Whirlpool Galaxy (M51)"
+ ],
+ [
+  "Y12 Galaxy compare (flat orbit vs helix) with a draggable divider",
+  true,
+  "0.7083333333333334"
+ ],
+ [
+  "Y13 keyboard pan (D) moves the camera across the Solar System",
+  true,
+  ""
+ ],
+ [
+  "Y14 Sun's life view opens (life strip, phase chips, guide narrates)",
+  true,
+  "Main sequence \u00b7 today"
+ ],
+ [
+  "Y15 red giant: Mercury, Venus and Earth swallowed, narrated",
+  true,
+  "Red giant branch \u00b7 +7.49 Gyr"
+ ],
+ [
+  "Y16 white dwarf: Earth-sized, 0.54 solar masses",
+  true,
+  "Luminosity 0.006 L\u2609 \u00b7 radius 0.013 R\u2609 (about 1.5\u00d7 Earth) \u00b7 surface 14,079 K \u00b7 ma"
+ ],
+ [
+  "Y17 dock strip scrubs the Sun's life (click at 30% -> u=0.3)",
+  true,
+  "0.30000000432260315"
+ ],
+ [
+  "Y18 exit returns to the normal Solar System",
+  true,
+  ""
+ ],
+ [
   "P FPS, solar-system view (Intel HD 4600, 1440x900; shared GPU)",
   true,
-  "22 fps @ dpr 0.70, 57 draw calls, 124486 tris"
+  "54 fps @ dpr 1.00, 1 draw calls, 2 tris"
  ],
  [
   "P FPS, Earth close-up",
-  false,
-  "14 fps @ dpr 0.70"
+  true,
+  "52 fps @ dpr 1.00"
  ],
  [
   "P 10 days/s playback fades the Earth spin (spinBlend -> 0)",
   true,
-  "spinBlend=0.000"
+  "spinBlend=0.001"
  ],
  [
   "Q offline weather/geocode: app still boots",
@@ -460,6 +535,11 @@
   "right edge 382"
  ],
  [
+  "S2 mobile: move/recenter tools are on-screen",
+  true,
+  "[346, 382, 58, 136]"
+ ],
+ [
   "S mobile 390px: no horizontal page scroll",
   true,
   "390"
@@ -472,6 +552,6 @@
  [
   "T final file size <= 16 MB",
   true,
-  "2.89 MB"
+  "3.90 MB"
  ]
 ]

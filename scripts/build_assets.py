@@ -112,21 +112,28 @@ SATS = {
 
 # ---- Gaia DR3 nearby stars (ESA/Gaia/DPAC, CC BY-SA 3.0 IGO): ~50k stars, 1-in-12 random subsample of G<10.5, parallax>1 mas, plx/err>10 ----
 import struct, math
-gaia = bytearray(); gn = 0
-with open(f"{RAW}/gaia_nearby.csv", encoding="utf-8") as fh:
-    next(fh)
-    for line in fh:
-        try:
-            l, bb, plx, g, c = line.strip().split(",")
-            l, bb, plx, g = float(l), float(bb), float(plx), float(g); c = float(c) if c not in ("", "null") else 0.8
-        except ValueError:
-            continue
-        d = 1000.0 / plx; lr, br = math.radians(l), math.radians(bb)
-        xg, yg, zg = d * math.cos(br) * math.cos(lr), d * math.cos(br) * math.sin(lr), d * math.sin(br)
-        fx, fy, fz = -xg, zg, yg                       # galaxy frame (matches 15_galaxy_math.js galToFrame), pc relative to the Sun
-        q = lambda v: max(-32767, min(32767, int(round(v * 10))))   # 0.1 pc units
-        gaia += struct.pack("<hhhBB", q(fx), q(fy), q(fz), max(0, min(255, int(round(g * 10)))), max(0, min(255, int(round((c + 0.6) * 50)))))
-        gn += 1
+def pack_gaia(path):
+    out = bytearray(); n = 0
+    with open(path, encoding="utf-8") as fh:
+        next(fh)
+        for line in fh:
+            try:
+                l, bb, plx, g, c = line.strip().split(",")
+                l, bb, plx, g = float(l), float(bb), float(plx), float(g); c = float(c) if c not in ("", "null") else 0.8
+            except ValueError:
+                continue
+            d = 1000.0 / plx; lr, br = math.radians(l), math.radians(bb)
+            xg, yg, zg = d * math.cos(br) * math.cos(lr), d * math.cos(br) * math.sin(lr), d * math.sin(br)
+            fx, fy, fz = -xg, zg, yg                       # galaxy frame (matches 15_galaxy_math.js galToFrame), pc relative to the Sun
+            q = lambda v: max(-32767, min(32767, int(round(v * 10))))   # 0.1 pc units
+            out += struct.pack("<hhhBB", q(fx), q(fy), q(fz), max(0, min(255, int(round(g * 10)))), max(0, min(255, int(round((c + 0.6) * 50)))))
+            n += 1
+    return out, n
+gaia, gn = pack_gaia(f"{RAW}/gaia_nearby.csv")
+# ESA Gaia TAP (https://gea.esac.esa.int/tap-server/tap/sync, ADQL, csv, MAXREC 200000): SELECT l, b, parallax, phot_g_mean_mag AS g, bp_rp AS c FROM gaiadr3.gaia_source
+#   WHERE parallax > 10 AND parallax_over_error > 10 AND random_index < 450000000 AND phot_g_mean_mag IS NOT NULL
+# denser sample inside 100 pc (parallax > 10 mas, plx/err > 10, 1-in-4 random_index sample, any magnitude) for the closest zoom
+gaia100, gn100 = pack_gaia(f"{RAW}/gaia_100pc.csv")
 # named nearby stars (HYG v4.0, Hipparcos-derived) within 60 pc, frame coords in pc
 M = [[-0.0548755604, -0.8734370902, -0.4838350155], [0.4941094279, -0.4448296300, 0.7469822445], [-0.8676661490, -0.1980763734, 0.4559837762]]
 near = []
@@ -149,6 +156,7 @@ with open(OUT, "w", encoding="utf-8") as f:
     f.write("const STAR_NAMES=" + json.dumps(named, separators=(",", ":"), ensure_ascii=False) + ";\n")
     f.write("const CONSTS=" + json.dumps(cons, separators=(",", ":"), ensure_ascii=False) + ";\n")
     f.write("const GAIA=" + json.dumps({"n": gn, "b64": base64.b64encode(bytes(gaia)).decode()}, separators=(",", ":")) + ";\n")
+    f.write("const GAIA100=" + json.dumps({"n": gn100, "b64": base64.b64encode(bytes(gaia100)).decode()}, separators=(",", ":")) + ";\n")
     f.write("const NEAR_STARS=" + json.dumps(near, separators=(",", ":"), ensure_ascii=False) + ";\n")
     f.write("const SATS=" + json.dumps(SATS, separators=(",", ":")) + ";\n")
 print(f"wrote {OUT}: {os.path.getsize(OUT)/1024:.0f} KB; stars={len(stars)} named={len(named)} cons={len(cons)}")
