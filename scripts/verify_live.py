@@ -25,7 +25,7 @@ with sync_playwright() as p:
     page.click('#gScales [data-s="lan"]'); time.sleep(4)
     ok("atlas: Laniakea view", page.evaluate("window.__app.FAR.lan.visible"))
     page.screenshot(path="data/shots/live_laniakea.png")
-    page.click('#gScales [data-s="merge"]'); page.wait_for_function("window.__app.MG.ready", timeout=90000); page.click("#mgFinal"); time.sleep(3)
+    page.click('#gScales [data-s="merge"]'); [time.sleep(0.5) for _ in range(180) if not page.evaluate("window.__app.MG.ready")]; page.click("#mgFinal"); time.sleep(3)
     ok("atlas: Milky Way-Andromeda collision simulates and reaches the merged final state", page.evaluate("window.__app.MG.ready && window.__app.MG.info.sep < 3 && window.__app.GV.mt > 9000"), page.evaluate("document.getElementById('gdTitle').innerText"))
     page.screenshot(path="data/shots/live_collision.png")
     page.evaluate("window.__app.setView('system')"); time.sleep(2.5); page.click("#btnLife"); time.sleep(1.5); page.evaluate("window.__app.LIFE.u=0.62"); time.sleep(1.2)
